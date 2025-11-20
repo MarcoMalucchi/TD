@@ -1,5 +1,5 @@
 I_d_LED_rosso.txt
-I_d_LED_arancione.txt
+I_d_LED_arancio.txt
 I_d_LED_giallo.txt
 I_d_LED_verde.txt
 I_d_LED_blu.txt

@@ -68,7 +68,7 @@ for i in range(len(filenames)):
 
     #CONTROLLO SU INCERTEZZE
     musk = (s_c < M*s_A*1e-1)
-    print(f'Controllo su incertezze: {musk.sum()}')
+    #print(f'Controllo su incertezze: {musk.sum()}')
 
     # ===========================================================
     #               RESIDUALS AND CHI-SQUARE IN INVERTED SPACE
@@ -78,11 +78,12 @@ for i in range(len(filenames)):
     chi2 = np.sum((res_c / s_c) ** 2)
     dof = len(c) - len(popt)
 
+    
     print(f'Fit results for {filenames[i]}:')
     print(f'M = {M:.6f} ± {sM:.6f}, Q = {Q:.6f} ± {sQ:.6f}')
     print(f'Original slope m = {m:.6f} ± {sm:.6f}')
     print(f'Chi²/dof = {chi2/dof:.6f} +/- {np.sqrt(2/dof)} \n')
-
+    
     # ===========================================================
     #                       ABSORPTION COEFFICIENT
     # ===========================================================
@@ -92,7 +93,7 @@ for i in range(len(filenames)):
     # ===========================================================
     #                   INVERTED PLOT (c vs A)
     # ===========================================================
-
+    
     fig = plt.figure(figsize=(10,6), dpi=100, layout='constrained')
     ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1], 'hspace': 0.05})
 
@@ -135,12 +136,14 @@ for i in range(len(filenames)):
         ax2.legend(fontsize='16')
 
         plt.savefig('/home/marco/Desktop/Uni_anno3/TD/Es_07/presentazione/plot_fit_conc_pres_vs_A_'+color[i]+'.png', dpi=300)
-
+    
 
 co_abs = np.array(co_abs)
 s_co_abs = np.array(s_co_abs)
 
 L, s_L = np.loadtxt('/home/marco/Desktop/Uni_anno3/TD/Es_06/acquisizioni/mean_std_wavelenght.txt', delimiter=',', unpack=True, usecols=(1,2))
+
+x, abs = np.loadtxt('/home/marco/Desktop/Uni_anno3/TD/Es_07/acquisizioni/spettro_beta-carotene_sample2.txt', delimiter=',', unpack=True)
 
 Matrix = np.column_stack((L, s_L, co_abs, s_co_abs))
 
@@ -149,6 +152,7 @@ Matrix = np.column_stack((L, s_L, co_abs, s_co_abs))
 fig1, ax3 = plt.subplots(1,1, figsize=(10,6), dpi=100, layout='constrained')
 
 ax3.errorbar(L, co_abs*1e-9, yerr = s_co_abs*1e-9, xerr=s_L, fmt='.', label='coeff abs vs $\lambda$')
+ax3.plot(x, abs*1e-7, linestyle='-', label='Spettro E160a')
 ax3.set_xlabel('$\lambda_{LED}$ [nm]')
 ax3.set_ylabel('$c_0 \epsilon_{\lambda}$ [1/nm]')
 ax3.legend()
@@ -170,7 +174,7 @@ if savefig:
     ax3.tick_params(axis='y', labelsize=16)
     ax3.legend(fontsize='16')
 
-    plt.savefig('/home/marco/Desktop/Uni_anno3/TD/Es_07/presentazione/plot_coeffasb_vs_lambda.png', dpi=300)
+    plt.savefig('/home/marco/Desktop/Uni_anno3/TD/Es_07/presentazione/plot_coeffasb_vs_lambda_1.png', dpi=300)
 
 
 
