@@ -152,7 +152,7 @@ Matrix = np.column_stack((L, s_L, co_abs, s_co_abs))
 fig1, ax3 = plt.subplots(1,1, figsize=(10,6), dpi=100, layout='constrained')
 
 ax3.errorbar(L, co_abs*1e-9, yerr = s_co_abs*1e-9, xerr=s_L, fmt='.', label='coeff abs vs $\lambda$')
-ax3.plot(x, abs*1e-7, linestyle='-', label='Spettro E160a')
+#ax3.plot(x, abs*1e-7, linestyle='-', label='Spettro E160a')
 ax3.set_xlabel('$\lambda_{LED}$ [nm]')
 ax3.set_ylabel('$c_0 \epsilon_{\lambda}$ [1/nm]')
 ax3.legend()
@@ -166,16 +166,16 @@ if savefig:
                header="#L[nm]  #s_L[nm]  #co_abs[1/m]  #s_co_abs[1/m]")
 
     plt.savefig('/home/marco/Desktop/Uni_anno3/TD/Es_07/logbook/plot_coeffasb_vs_lambda.png', dpi=300)
-    plt.savefig('/home/marco/Desktop/Uni_anno3/TD/Es_07/logbook/SpettroAssorbimento.pdf', dpi=300)
-
+    #plt.savefig('/home/marco/Desktop/Uni_anno3/TD/Es_07/logbook/SpettroAssorbimento.pdf', dpi=300)
+    '''
     ax3.set_xlabel('$\lambda_{LED}$ [nm]', fontsize='18')
     ax3.set_ylabel('$c_0 \epsilon_{\lambda}$ [1/nm]', fontsize='18')
     ax3.tick_params(axis='x', labelsize=16)
     ax3.tick_params(axis='y', labelsize=16)
     ax3.legend(fontsize='16')
 
-    plt.savefig('/home/marco/Desktop/Uni_anno3/TD/Es_07/presentazione/plot_coeffasb_vs_lambda_1.png', dpi=300)
-
+    plt.savefig('/home/marco/Desktop/Uni_anno3/TD/Es_07/presentazione/plot_coeffasb_vs_lambda1.png', dpi=300)
+    '''
 
 
 plt.show()
