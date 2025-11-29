@@ -1,0 +1,6 @@
+LED_11_ros_spectrum.txt
+LED_15_ara_spectrum.txt
+LED_13_gia_spectrum.txt
+LED_14_ver_spectrum.txt
+LED_12_blu_spectrum.txt
+LED_25_vio_spectrum.txt

@@ -1,0 +1,6 @@
+characteristic_curve_LED_rosso.txt
+characteristic_curve_LED_arancione.txt
+characteristic_curve_LED_giallo.txt
+characteristic_curve_LED_verde.txt
+characteristic_curve_LED_blu.txt
+characteristic_curve_LED_viola.txt

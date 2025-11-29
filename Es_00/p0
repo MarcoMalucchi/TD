@@ -1,0 +1,12 @@
+seconda lorentziana
+	pos picco: -1.4e4
+	HWHM: 0.275e4
+	
+terza lorentziana
+	pos picco: 1.1e4
+	HWHM: 0.3e4
+	
+quarta lorentziana
+	pos picco: 3.45e4
+	HWHM: 0.3e4
+

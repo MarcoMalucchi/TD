@@ -1,0 +1,6 @@
+setup.py
+tdwf.egg-info/PKG-INFO
+tdwf.egg-info/SOURCES.txt
+tdwf.egg-info/dependency_links.txt
+tdwf.egg-info/requires.txt
+tdwf.egg-info/top_level.txt

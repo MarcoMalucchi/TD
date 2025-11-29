@@ -1,0 +1,186 @@
+MATLAB
+
+tre versioni
+1.matlab 2016	più rapido
+	2022	livescript (lento)
+2.matlab 2024	lento
+3.link versione di matlab online (lento per tanti dati, comodo per semplici operazioni)
+
+usare sempre lo script	file.m (istruzioni in serie interpretate da matlab una riga per volta)
+analisi_s00.m	nome file
+
+recupera dispense Baldini per python, hai dispense tradotte in matlab da roddaro
+
+matlab non ha librerie ma TURBOX, basta installarli non serve importarli all'inizio del codice
+
+Add-ods	dove sono i turbox di matlab, cliccandoci ci sono le liste dei moduli di matlba, alcuni per cui serve licenza ed altri opensource
+
+command window: è una shell matematica di matlab dove puoi fare conti semplice
+
+senza ; matlab stampa sempre, con sopprime l'output, ma la variabile resta
+
+una variabile definita nella command window entra anche nel workspace
+
+tutti i numeri sono double
+
+current folder: browser che mi dice dov'è il file matlba dove sto lavorando, NON AGGIUNGERE MAI DEI PATH
+
+lo script non viene prima compilato, matlab lo esegue finchè non trova la riga sbagliata, con run esegue lo scritp.
+
+matlab esegue tutto il codice, ma sarebbe comodo eseguirlo a blocchi:
+	
+	utilizzo il doppio commento: '%' un commento, '%%' definisce blocco di matlab, vado uno sei due blocchi e premo control+invio
+
+livescript, molto simile a jupyter notebook, sulla parte destra dello schermo produce il risultato dei diversi blocchi di codice, è comodo perchè è leggibile
+
+
+le funzioni numpy su python tornano con lo stesso nome su matlab senza il prefisso np.
+
+
+hold on		hold off	mantengono ed eliminano i plot
+
+clear all all'inizio del codice elimina tutte le variabili
+
+clearvars 'nome variabile' da mettere all'inizio di un nuovo blocco per eliminare le varibili del blocco precedente (per più variabili non servono le virgole, metti gli spazi)
+
+usando -except dopo clearvars mi toglie tutte le var tranne quelle specificate dopo
+
+whos 'var' mi dà il tipo di variabile
+
+uint8	unsigned int a 8 bit cioè va da 0 a 255 perchè sto usando un certo numero di bit
+
+matlab definisce sempre var in double, ma posso dirgli che tipo associare ad una var specificandolo c = uint8('numero')
+
+true false, variabili ristrette ad operazioni logiche
+
+~ NOT
+& and
+| or
+
+
+vettori
+
+	lista di numeri tra parentesi quadre, posso usare sia le virgole che gli spazi tra gli elementi dell'array.
+	le parentesi quadre sottointendono una funzione: di concatenazione orizzontale
+	per produrre vettore con funzione  horzcat(qui numeri dell'array separati da virgole - nelle funzioni SERVONO LE VIRGOLE)
+	ver vettore colonna parentisi quadre + elementi separati da ;  il punto e virgola va a capo
+	con funzione vertcat(elementi array, SEPARATI DA VIRGOLE)
+	posso concatenare anche più vettori tra loro, per es due colonne creando una matrice 2xn (dim vettori) [h,h]
+	in workspace vedo bite che le variabili occupano ed il loro tipo
+	
+	per identificare un certo elemento f(3) terzo elemento di array f, MATLAB CONTA A PARTIRE DA 1
+	f(end) prende ultimo elemento dell'array, f(end-1,end) prende ultimi due elementi del vettore
+	f(2:3) prende secondo e terzo elemento
+	
+stringhe
+	
+	"ciao" e 'ciao' ho due oggetti diversi: primo stringa, secondo è una concatenazione di caratteri (char tipo di variabile)
+	strin(1) per "ciao" ho 'i', per 'ciao' non esiste perchè parola unica
+	stringhe manipolabili come vettori [string;string]
+	
+	i caratteri si possono sommare, ma converte i caratteri nel loro codice ASCII e dà la somma dei numeri corrispondenti, quindi ho un numero alla fine dell'operazione di somma tra numeri
+	
+	le stringhe si sommano come in python
+	
+matrici
+	
+	m1 = [1 2 ; 3 4]
+	oppure
+	m1 = [1 2 ; ...
+	      3 4]
+	con le matrici si possono fare un sacco di cose meravigliose
+	det(m1) è determoinante
+	trace(m1)
+	inv(m1)
+	
+	fprint('determinante della matrice: %f\n', det(m1)) per printare nello standard output
+	tipico print alla c++
+	
+	
+printing
+	
+	disp(['det mat: ', num2str(det(m1))])
+	num2str number to string, string2num converte stringa in numero
+	
+elementi in matrice
+	
+	m1(1,2) elemento prima riga seconda colonna
+	m1(:,2) prende tutti gli elementi della seconda colonna (vettore colonna)
+	m1(1,:) prende tutta la prima riga
+	
+cella
+	
+	matrice i cui elementi posso essere variabili di qualsiasi tipo
+	aa = {'ciao' 6.51 true; 0 3+1i*6 -4858} in std output è mostrato come tabella
+
+numeri complessi
+
+	1i, 1j sono i simboli univoci per determinare l'unità immaginaria
+	i=3, con 1i vede unità imm. ed anche 1j
+	
+tabella
+
+	per combinare diversi elementi, ma in maniera più ordinata, è molta pulita anche graficamente, è vantaggiosa perchè posso estrarre facilmente gli elementi
+	
+	manes = {nomi con stringe}
+	marks = [array]
+	passed = {valori logici}
+	
+	mytable = table(names,marks,passed)
+	
+	mytable(2,[1,3]) seleziona cose dentro la tabella
+	
+operazioni vettoriali e matriciali
+
+	x = rand(3,1) array colonna 3x1 con numeri casuali dentro
+	y = x' operazione di trasposta
+	scalar= y*x
+	tensor = x*y
+	eleperele = y.*x
+	
+	M = rand(3,3)
+	
+	M*x riga per colonna
+	M.*x prodotto elemento per elemento, lascia le dimensioni invariate, le dimensioni devono essere le stesse
+	
+	M^2 quadrato della matrice nel senso dell'operazione matriciale
+	M.^2 matrice i cui elementi sono gli elementi della vecchia matrice elevati al quadrato
+	con il '.' faccio le operazioni elementi per elementi
+	
+	
+	readmatrix('nome file') è come np.loadtxt
+	puoi dare l'interprete latex nei plot
+	
+fit in matlab
+	
+	1.carico dataset
+	2.dò i nomi alle variabili
+	3.errorbar(x,y,e) plotto i dati con barre d'errore
+	4.funzione di fit
+	fitfunc= @(p,x)(funzione che vuoi fittare sui dati, p sono i parametri del fit quindi è un vettore, x è la varibile)
+	5.definisco vettore p0 delle guess
+	6.[qui c'è tutto, parametri e chiquadro] = nlinfit(x,y,fitfunc,p0,'weights',e)
+	
+	
+	andare su manuale matlab per vedere spiegazione fun nlinfit
+	
+	
+	
+	
+	
+	
+	
+		
+
+
+
+
+
+
+
+
+
+
+
+
+

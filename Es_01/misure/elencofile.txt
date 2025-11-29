@@ -1,0 +1,10 @@
+misura1.txt
+misura2.txt
+misura3.txt
+misura4.txt
+misura5.txt
+misura6.txt
+misura7.txt
+misura8.txt
+misura9.txt
+misura10.txt
