@@ -1,0 +1,863 @@
+% !TeX program = pdflatex
+\documentclass[aspectratio=169]{beamer}
+
+% ---------- Lingua & font ----------
+\usepackage[italian]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% ---------- Pacchetti utili ----------
+\usepackage{siunitx}
+\usepackage{physics}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\sisetup{detect-all, range-phrase=--, separate-uncertainty=true}
+\usepackage{adjustbox}
+
+% ---------- Palette "LED" ----------
+\definecolor{ledRed}{HTML}{FF4D4F}
+\definecolor{ledOrange}{HTML}{FF9100}
+\definecolor{ledYellow}{HTML}{FFEA00}
+\definecolor{ledGreen}{HTML}{00C853}
+\definecolor{ledBlue}{HTML}{2979FF}
+\definecolor{ledViolet}{HTML}{7C4DFF}
+\definecolor{ledDark}{HTML}{0D1321}
+\definecolor{ledGrey}{HTML}{ECEFF1}
+
+% ---------- Tema ----------
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+\setbeamercolor{structure}{fg=ledBlue}
+\setbeamercolor{frametitle}{bg=ledBlue!15!white, fg=ledDark}
+\setbeamercolor{title}{fg=ledDark}
+\setbeamercolor{block title}{bg=ledBlue!15!white,fg=ledDark}
+\setbeamercolor{block body}{bg=ledGrey!40!white,fg=black}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+	\leavevmode%
+	\hbox{%
+		\begin{beamercolorbox}[wd=.8\paperwidth,ht=2.5ex,dp=1ex,left]{author in head/foot}%
+			\hspace{1ex}\insertshorttitle{} \textcolor{gray}{|} \insertshortauthor{} \textcolor{gray}{|} \insertshortinstitute{}
+		\end{beamercolorbox}%
+		\begin{beamercolorbox}[wd=.2\paperwidth,ht=2.5ex,dp=1ex,right]{date in head/foot}%
+			\insertframenumber{} / \inserttotalframenumber\hspace{1ex}
+	\end{beamercolorbox}}%
+}
+
+% ---------- Bullet tondi "LED" ----------
+\setbeamertemplate{itemize item}{\tikz\fill[ledBlue] (0,0) circle (2pt);}
+\setbeamertemplate{itemize subitem}{\tikz\fill[ledGreen] (0,0) circle (1.6pt);}
+\setbeamertemplate{itemize subsubitem}{\tikz\fill[ledViolet] (0,0) circle (1.4pt);}
+
+% ---------- Macro segnaposto ----------
+\newcommand{\placeholder}[2][0.9\linewidth]{%
+	\begin{center}
+		\fbox{\parbox{#1}{\centering\small\textit{#2}}}
+	\end{center}
+}
+
+% ---------- Comodità simboli ----------
+\newcommand{\Vsoglia}{V_{\text{soglia}}}
+\newcommand{\Isoglia}{I_{\text{soglia}}}
+\newcommand{\Eg}{E_{\mathrm{g}}}
+\newcommand{\VT}{V_{\!T}}
+\newcommand{\Ipd}{I_{\mathrm{PD}}}
+\newcommand{\Iled}{I_{\mathrm{LED}}}
+
+\setbeamertemplate{enumerate items}[default]
+
+% ---------- Titoli ----------
+
+%Visto che la presentazione fa riferimento all'esperienza globlale di optoelettronico, forse avrebbe più senso fare il titolo accordingly
+
+%Esempio: {Esperienza di optoelettronica: LED e fotodiodi & (---titolo seconda parte esperienza---)}
+
+\title[Optoelettronica]{Optoelettronica: I–V dei LED, stima di $h$, fotodiodo e transimpedenza, verifica della legge di Lambert-Beer.}
+\subtitle{Corso di Tecnologie Digitali — Università di Pisa, A.A.\ 2025/2026}
+\author[Di Nino \& Malucchi (T10)]{Alessia Di Nino \and Marco Malucchi\\\small Tavolo T10}
+\institute[UniPI]{Dipartimento di Fisica \textit{``E. Fermi''}}
+\date{\today}
+% \titlegraphic{\includegraphics[height=1cm]{unipi_logo.pdf}} % (opzionale) inserire logo
+
+% ---------- Titolo con "barre LED" ----------
+\addtobeamertemplate{title page}{%
+	\vspace*{-1ex}
+	\begin{center}
+		\begin{tikzpicture}[x=0.7cm]
+			\foreach \i/\c in {0/ledRed,1/ledOrange,2/ledYellow,3/ledGreen,4/ledBlue,5/ledViolet}{
+				\fill[\c] (\i,0) circle (0.12);
+				\fill[\c] (\i,0.35) circle (0.12);
+				\fill[\c] (\i,0.7) circle (0.12);
+			}
+		\end{tikzpicture}
+	\end{center}
+}{}
+
+% =========================================================
+\begin{document}
+	
+	\begin{frame}
+		\titlepage
+	\end{frame}
+	
+	%Anche in questo caso, visto che dobbiamo trattare parte 1 e 2, io metterei una slide per la parte 1, dove ci mettiamo li obiettivi di quella parte, poi trattatiamo tutta la parte 1 e finita quella facciamo la stessa cosa per la parte 2.
+	
+	% ---------- Outline parte 1 ----------
+	\begin{frame}{Parte 1: Obiettivi e outline}
+		\begin{block}{Passaggi principali}
+			\begin{itemize}
+				\item Specifiche del LED: sue caratteristiche di funzionamento e curva caratteristica I-V.
+				\item Stima della costante di Planck $h$.
+				\item Fotodiodo OSD15-5T: test $V_{\!OC}$ e $I_{\!SC}$, poi misura con transimpedenza.
+				\item Verifica della linearità $\Ipd \propto \Iled$ e discussione limiti sperimentali.
+			\end{itemize}
+		\end{block}
+	\end{frame}
+	
+	% ---------- Teoria minima LED ----------
+	\begin{frame}{Concetti teorici di base.}
+		\begin{itemize}
+			
+			\item LED (light emitting diode): diodo a giunzione pn, la luce viene emessa dai processi di ricombinazione delle cariche minoritarie che attraversano la giunzione quando è polarizzata direttamente.
+			\pause
+			\item Energia del fotone: $E=\dfrac{hc}{\lambda}$; visibile $\lambda\sim 400$--$700\,$nm $\Rightarrow E\sim 3$--$1.7\,$eV, assumo che l'energia dei fotoni emessi sia pari all'energia del band gap $E_g$.
+			\pause
+			\item Equazione di Shockley: $I=I_S\!\left(e^{V/\VT}-1\right)$, con $\VT \simeq \SI{26}{mV}$ a T ambiente, mi aspetto che la curva caratteristica del LED abbia questo andamento.
+		\end{itemize}
+	\end{frame}
+	
+	% ---------- Specifiche LED ----------
+	\begin{frame}{Specifiche LED}
+		\begin{columns}[T]
+			\column{0.52\linewidth}
+			
+			Obiettivo: determinare la caratteristica del diodo, vedi schema del circuito:
+			
+			\begin{itemize}
+				\item Potenziale ai capi del LED:
+				\[
+				V_{\text{LED}}=V_{\text{Ch2}}
+				\]
+				\item Corrente ai capi del LED:
+				\[
+				\Iled=\dfrac{V_{\text{Ch1}}-V_{\text{Ch2}}}{R_1}
+				\]
+				\item Sweep in tensione (0–3/4 V), $\sim$100 punti; grafico semi-log di $I$ vs $V$.
+			\end{itemize}
+			\column{0.44\linewidth}
+			\begin{figure}
+				\centering
+				\includegraphics[width=\linewidth]{circuito_task2_es_06_LED.png}
+				\caption{Schema del circuito}
+				\label{fig:scema_circuito_task2}
+			\end{figure}
+		\end{columns}
+	\end{frame}
+	
+	%---Specifiche LED e curva caratteristica misurata---
+	
+	\begin{frame}{Specifiche LED}
+		
+		Specifiche LED rosso dal datasheet:
+		
+		\begin{itemize}
+			\item Corrente di funzionamento: $I = 20$ mA
+			\item Voltaggio di funzionamento: $VS = 2 - 2.2$ V
+			\item Intensità luminosa (in millicandles "mcd"): $I_{lum} = 600 - 800$ mcd
+		\end{itemize}
+		\pause
+		Infine i valori di ddp e corrente per i quali il LED inizia a brillare:
+		
+		\begin{itemize}
+			\item $V_{soglia} = 1.5$ V.
+			\item $I_{soglia} = 20 \mu$ A.
+		\end{itemize}
+		
+	\end{frame}
+	
+	\begin{frame}[t]
+		\frametitle{Curva caratteristica}
+		
+		\begin{figure}
+			\centering
+			% Usa il codice che avevi (con height=0.75\textheight)
+			\includegraphics[
+			width=0.9\textwidth,
+			height=0.75\textheight,
+			keepaspectratio
+			]{characteristic_curve_LED_rosso.png}
+			
+			\vspace{-0.5cm} % <-- AGGIUNGI QUESTO. Tira su quello che segue
+			%     (prova con -0.5cm, -1cm, -1.5cm...)
+			
+			\caption{Curva caratteristica LED rosso in scala semilog.}
+			\label{fig:curva_caratteristica_rosso}
+		\end{figure}
+	\end{frame}
+	
+	%---STIMA COSTANTE DI PLANCK---
+	
+	\begin{frame}{Stima della costante di Planck}
+		
+		\begin{columns}[T]
+			\column{0.52\linewidth}
+			
+			Facendo le seguenti assunzioni:
+			\begin{itemize}
+				\item $I_s \propto {n_i}^2 \propto e^{\frac{-E_g}{k_B T}}$, con $E_g=\frac{hc}{\lambda}$
+				\item $V \gg V_T$
+			\end{itemize}
+			\pause
+			Trovo:
+			
+			\[
+			I \propto e^{\frac{V-V_g}{V_T}}
+			\]
+			
+			con $V_g \equiv \frac{E_g}{e}$
+			\pause
+			
+			Allora arbitrariamente fissata $I_{soglia}$ e posto $V_{soglia} \equiv V(I_{soglia})$:
+			
+			\[
+			V_{soglia}-V_g = V(I_{soglia}) - \frac{hc}{e\lambda}
+			\]
+			
+			è una \textbf{costante} per ogni LED
+			
+			\pause
+			
+			\column{0.44\linewidth}
+			
+			Stima di $h$:
+			
+			\begin{enumerate}
+				\item Trovare $V_{soglia}$ e $\lambda$ per ogni LED
+				\pause
+				\item Fittare dati con funzione:
+				\[
+				\frac{1}{\lambda} = \frac{e}{hc} V(I_{soglia}) + b
+				\]
+				\pause
+				\item Stimare, dal coefficiente angolare modello lineare, $h$
+			\end{enumerate}
+		\end{columns}
+	\end{frame}
+	
+	
+	% ---------- Spettri ----------
+	\begin{frame}{Stima della costante di Planck: lunghezza d'onda LED}
+		
+		Per determinare $\frac{1}{\lambda}$, uso gli spettri dei LED utilizzati messi a disposizione.
+		\pause
+		Li manipolo nel seguente modo:
+		
+		\begin{enumerate}
+			\item Rimuovo l'offset.
+			\pause
+			\item Tratto lo spettro come distribuzione, quindi ricavo media e deviazione standard come:
+			\[
+			\langle \lambda \rangle = \begin{matrix} \sum_{i} \lambda_i \frac{I(\lambda_i)}{I_{TOT}} \end{matrix} \; ; \; \sigma_{\lambda} = HWHM
+			\]
+			\pause
+			quindi $\langle \lambda \rangle$ come media pesata con intensità luminosa relativa al totale e dev. std. come larghezza a metà altezza del picco principale
+		\end{enumerate}
+	\end{frame}
+	
+	\begin{frame}{Stima della costante di Planck: esempio spettro LED e risultati}
+		\begin{columns}[T]
+			\column{0.52\linewidth}
+			
+			Per contestualizzare i conti sopra:
+			\begin{figure}
+				\centering
+				\includegraphics[width=\linewidth]{esempio_spettro_4.png}
+				\caption{Esempio di spettro dei LED utilizzati.}
+				\label{fig:esempio_spettro}
+			\end{figure}
+			
+			\column{0.44\linewidth}
+			\pause
+			Di seguito i risultati ottenuti per $\langle \lambda \rangle$ e $\sigma_{\lambda}$
+			
+			\begin{table}[h!]
+				\centering
+				\scriptsize
+				\begin{tabular}{c c c}
+					%\begin{tabular}{|c|c|c|}
+					\hline
+					\textbf{LED} & \textbf{Media [nm]} & \textbf{Dev. std. [nm]} \\
+					\hline
+					Rosso      & 625 & 7 \\
+					Blu        & 469 & 7 \\
+					Giallo     & 588 & 7 \\
+					Verde      & 532 & 1 \\
+					Arancione  & 604 & 8 \\
+					Viola      & 483 & 6 \\
+					\hline
+				\end{tabular}
+			\end{table}
+			
+		\end{columns}
+	\end{frame}
+	
+	
+	
+	% ---------- Vsoglia ----------
+	\begin{frame}{Stima della costante di Planck: ottenimento delle $\Vsoglia$}
+		
+		Procedimento per ottenere i valori di $\Vsoglia$ per ogni LED:
+		\pause
+		
+		\begin{enumerate}
+			\item Per tutti i LED si è scelto il seguente valore di $\Isoglia$: $\Isoglia = 100 \mu A$
+			\pause
+			\item Per ogni LED è stata acquisita la sua curva caratteristica e ricavato $\Vsoglia$
+			\pause
+			\item I valori di $\Vsoglia$ sono stati presi selezionando il punto più vicino al valore di $\Isoglia$ per ogni curva caratteristica
+			\pause
+		\end{enumerate}
+		
+		Di seguito i valori ottenuti:
+		
+		\begin{table}[h!]
+			\centering
+			\scriptsize
+			\begin{tabular}{c c c}
+				\hline
+				\textbf{LED} & \textbf{V($I_{\mathrm{soglia}}$) [V]} & \textbf{Incertezza [V]} \\
+				\hline
+				Rosso      & 1.710 & 0.005 \\
+				Arancione  & 1.769 & 0.006 \\
+				Giallo     & 1.798 & 0.004 \\
+				Verde      & 2.210 & 0.005 \\
+				Blu        & 2.501 & 0.005 \\
+				Viola      & 2.885 & 0.006 \\
+				\hline
+			\end{tabular}
+		\end{table}
+		
+	\end{frame}
+	
+	% ---------- Risultati fit per Planck constant ----------
+	
+	\begin{frame}{Stima della costante di Planck: fit e relativi risultati}
+		
+		Risultati del fit:
+		
+		\begin{table}[h!]
+			\centering
+			\begin{tabular}{c c c}
+				\hline
+				\textbf{Parametro} & \textbf{Valore} & \textbf{Valore atteso} \\
+				\hline
+				${\chi}^2_{\mathrm{rid}}$ & $10.2 \pm 0.7$ & $1$ \\
+				$a$ & $(4.3 \pm 0.2)\cdot 10^{5}~\mathrm{C\,J^{-1}m^{-1}}$ & $806554~\mathrm{C\,J^{-1}m^{-1}}$ \\
+				$b$ & $(9.0 \pm 0.4)\cdot 10^{5}~\mathrm{m^{-1}}$ & difficile da stimare \\
+				\hline
+			\end{tabular}
+		\end{table}
+		
+		Dove $a \equiv coeff.ang$ e $b \equiv offset$.
+		
+		Costante di planck:
+		\[
+		h = \frac{e}{ac} = (1.24 \pm 0.06) \cdot 10^{-33} J \cdot s
+		\]
+		a circa 9 barre d'errore dal valore effettivo: $h \simeq 6.6 \cdot 10^{-34} J \cdot s$
+		
+	\end{frame}
+	
+	\begin{frame}{Stima della costante di Planck: fit e relativi risultati}
+		
+		\begin{figure}
+			\centering
+			% Usa il codice che avevi (con height=0.75\textheight)
+			\includegraphics[
+			width=0.9\textwidth,
+			height=0.75\textheight,
+			keepaspectratio
+			]{plot_fit_Vsoglia_vs_1suLambda1.png}
+			
+			\vspace{-0.5cm} % <-- AGGIUNGI QUESTO. Tira su quello che segue
+			%     (prova con -0.5cm, -1cm, -1.5cm...)
+			
+			\caption{Grafici di fit e residui.}
+			\label{fig:fit_graph_planck}
+		\end{figure}
+		
+	\end{frame}
+	
+	% ---------- Fotodiodo: principio ----------
+	\begin{frame}{Fotodiodo: principio e modelli}
+		
+		\begin{itemize}
+			\item Il fotodiodo si comporta come un diodo la cui caratteristica è traslata di una fotocorrente:
+			\pause
+			\[
+			I = I_S\!\left(e^{V/\VT}-1\right) - I_L
+			\]
+			
+			\pause
+			\item In luce monocromatica, la corrente fotogenerata è proporzionale alla potenza ottica incidente:
+			\pause
+			\[
+			I_L = \eta(\nu)\,\frac{e}{h\nu}\,W \quad \Rightarrow \quad R = \frac{\eta e}{h\nu}
+			\]
+			
+			\pause
+			\item Si distinguono due regimi operativi fondamentali:
+			\pause
+			\[
+			\text{Regime fotovoltaico: } V_{\!OC}, \qquad 
+			\text{Regime fotoconduttivo: } I_{\!SC}.
+			\]
+		\end{itemize}
+		
+	\end{frame}
+	
+	% ---------- Transimpedenza ----------
+	\begin{frame}{Amplificatore a transimpedenza}
+		
+		\begin{columns}[T]
+			% ====== Colonna sinistra: testo + schema ======
+			\column{0.55\linewidth}
+			\begin{figure}
+				\centering
+				\includegraphics[width=0.4\linewidth]{amplificatore_a_transimpedenza_schema.png}
+				\caption{Schema dell’amplificatore a transimpedenza}
+			\end{figure}
+			
+			\pause
+			
+			\begin{itemize}
+				\item Output: $V_{\text{out}} = -R_2\,I_{\mathrm{PD}}$ \quad 
+				\item MCP601/602 alimentati a $\pm\SI{3}{V}$; aggiungere $C \parallel R_2$ per stabilità.
+				\item Tipico: $R_2 = \SI{10}{k\ohm}$, $C \sim \SI{1}{nF}$.
+			\end{itemize}
+			% ====== Colonna destra: foto circuito ======
+			\pause
+			\column{0.42\linewidth}
+			\begin{figure}
+				\centering
+				\includegraphics[width=\linewidth]{amplificatore_a_transimpedenza_realizzato.jpg}
+				\caption{Circuito realizzato su breadboard}
+			\end{figure}
+			
+		\end{columns}
+	\end{frame}
+	
+	
+	\begin{frame}{Segnali acquisiti e analisi del rumore (1/1)}
+		\textbf{Configurazioni testate:}
+		
+		\begin{columns}
+			% Configurazione 1: Fotodiodo coperto
+			\begin{column}{0.48\textwidth}
+				\begin{enumerate}
+					\item \textbf{Fotodiodo coperto (buio):}
+					\begin{figure}
+						\centering
+						\includegraphics[width=0.95\linewidth]{coperto_task7.png}
+						\caption{Segnale al buio (Rumore di fondo)}
+					\end{figure}
+				\end{enumerate}
+			\end{column}
+			
+			% Configurazione 2: Luce ambiente
+			\begin{column}{0.48\textwidth}
+				\begin{enumerate}
+					\setcounter{enumi}{1}
+					\item \textbf{Luce ambiente della stanza:}
+					\begin{figure}
+						\centering
+						\includegraphics[width=0.95\linewidth]{stanza_task7.png}
+						\caption{Segnale con luce ambiente}
+					\end{figure}
+				\end{enumerate}
+			\end{column}
+		\end{columns}
+		
+		In buio: segnale stabile, $\sigma_V \approx 10\text{ mV}$ (rumore elettronico).
+	\end{frame}
+	
+	\begin{frame}{Segnali acquisiti e analisi del rumore (2/2)}
+		
+		\begin{columns}
+			% Configurazione 3: Lampada del treno
+			\begin{column}{0.48\textwidth}
+				\begin{enumerate}
+					\setcounter{enumi}{2} % Inizia la numerazione da 3
+					\item \textbf{Lampada:}
+					\begin{figure}
+						\centering
+						\includegraphics[width=0.95\linewidth]{lampada_treno_task7.png}
+						\caption{Segnale lampada }
+					\end{figure}
+				\end{enumerate}
+			\end{column}
+			
+			% Configurazione 4: Flash del telefono
+			\begin{column}{0.48\textwidth}
+				\begin{enumerate}
+					\setcounter{enumi}{3} % Inizia la numerazione da 4
+					\item \textbf{Flash del telefono:}
+					\begin{figure}
+						\centering
+						\includegraphics[width=0.95\linewidth]{flash_task7.png}
+						\caption{Segnale flash telefono}
+					\end{figure}
+				\end{enumerate}
+			\end{column}
+		\end{columns}
+		In esposizione a luce: disturbi periodici.
+	\end{frame}
+	
+	
+	
+	% ---------- Linearità ----------
+	\begin{frame}{Linearità $\Ipd$ vs $\Iled$ (LED $\to$ Fotodiodo)}
+		
+		\begin{columns}[T]
+			
+			% -------- COLONNA SINISTRA: testo + formule, avanzamento automatico --------
+			\begin{column}{0.48\textwidth}
+				\textbf{Procedura:}
+				\begin{itemize}[<+->] % ogni item/formula avanza di uno
+					\item \textbf{Setup:} Allineare il LED al PD; sweep di W1 come per le curve IV del LED.
+					\item \textbf{Calcolo Correnti:}
+					\[
+					\Iled=\frac{V_{\mathrm{Ch1}}-V_{\mathrm{Ch2}}}{R_1}
+					\]
+					\item \[
+					\Ipd=-\frac{V_{\text{out}}}{R_2}
+					\]
+					\item \textbf{Fit lineare:}\quad
+					\[
+					\Ipd = a\,\Iled + b
+					\]
+				\end{itemize}
+			\end{column}
+			
+			% -------- COLONNA DESTRA: immagini che si sostituiscono --------
+			\begin{column}{0.48\textwidth}
+				
+				% Aspetta che il testo a sinistra sia finito, poi inizia la giostra immagini
+				\onslide<+->{
+					\begin{overlayarea}{\columnwidth}{0.9\textheight}
+						
+						% Ogni \only<+> usa il PROSSIMO passo disponibile: niente numeri assoluti!
+						\only<+>{
+							\begin{figure}\centering
+								\includegraphics[width=\linewidth]{Fit_LED_rosso.png}
+								\caption{Fit per LED rosso}
+							\end{figure}
+						}
+						
+						\only<+>{
+							\begin{figure}\centering
+								\includegraphics[width=\linewidth]{Fit_LED_arancio.png}
+								\caption{Fit per LED arancio}
+							\end{figure}
+						}
+						
+						\only<+>{
+							\begin{figure}\centering
+								\includegraphics[width=\linewidth]{Fit_LED_giallo.png}
+								\caption{Fit per LED giallo}
+							\end{figure}
+						}
+						
+						\only<+>{
+							\begin{figure}\centering
+								\includegraphics[width=\linewidth]{Fit_LED_verde.png}
+								\caption{Fit per LED verde}
+							\end{figure}
+						}
+						
+						\only<+>{
+							\begin{figure}\centering
+								\includegraphics[width=\linewidth]{Fit_LED_blu.png}
+								\caption{Fit per LED blu}
+							\end{figure}
+						}
+						
+						\only<+>{
+							\begin{figure}\centering
+								\includegraphics[width=\linewidth]{Fit_LED_viola.png}
+								\caption{Fit per LED viola}
+							\end{figure}
+						}
+						
+					\end{overlayarea}
+				} % fine onsilde<+->
+				
+			\end{column}
+		\end{columns}
+	\end{frame}
+	
+	
+	\begin{frame}{Linearità $\Ipd$ vs $\Iled$}
+		
+		\begin{columns}[T,totalwidth=\textwidth]
+			% ====== COLONNA SINISTRA: testo e formule ======
+			\begin{column}{0.48\textwidth}
+				
+				% --- 1) Testo con formule ---
+				\textbf{Conversione fotometrica $\to$ radiometrica:}
+				\[
+				W_{PD}^{(\mathrm{ds})} = \frac{I_v\,A_{PD}}{683\,V(\lambda)\,d^2}
+				\]
+				\[
+				W_{PD}^{(\mathrm{exp})} = \frac{I_{PD}}{\mathcal{R}(\lambda)}
+				\]
+				
+				% --- 3) Interpretazione (mostrata dopo l'immagine) ---
+				\onslide<3->{
+					\vspace{0.5em}
+					\small
+					\textbf{Interpretazione:}
+					\begin{itemize}
+						\item Tutti i LED si trovano sotto la linea $y=x$ (solo una frazione del fascio raggiunge il PD).
+						\item Il trend delle potenze è coerente con i datasheet.
+						\item Differenze dovute a geometria e sensibilità spettrale del fotodiodo.
+					\end{itemize}
+				}
+				
+			\end{column}
+			
+			% ====== COLONNA DESTRA: immagine ======
+			\begin{column}{0.5\textwidth}
+				\onslide<2->{
+					\begin{figure}
+						\centering
+						\includegraphics[width=\linewidth,keepaspectratio]{w.png}
+						\caption{\scriptsize Potenza ottica $W$ in funzione di $I_{\!LED}$}
+					\end{figure}
+				}
+			\end{column}
+			
+		\end{columns}
+	\end{frame}
+	
+	
+	
+	% ---------- Conclusioni ----------
+	\begin{frame}{Conclusioni}
+		\begin{itemize}
+			\item IV dei LED coerenti con Shockley; $\Vsoglia$ cresce all’aumentare di $1/\lambda$.
+			\item Fit lineare $\Vsoglia$ vs $1/\lambda$ $\Rightarrow$ stima di $h$ compatibile con CODATA (entro $\sim10\%$).
+			\item Transimpedenza: misura pulita di $\Ipd$; buona linearità $\Ipd \propto \Iled$ nel rosso.
+		\end{itemize}
+	\end{frame}
+	
+	% ---------- Backup: formule ----------
+	\appendix
+	\begin{frame}{(Backup) Formule utili}
+		\begin{itemize}
+			\item Shockley: $I=I_S\!\left(e^{V/\VT}-1\right)$,\quad $\VT=\dfrac{k_B T}{e}\approx\SI{25.85}{mV}$.
+			\item Relazioni di calcolo: \ $\Iled=\dfrac{V_{\text{Ch1}}-V_{\text{Ch2}}}{R_1}$,\quad $\Ipd=-\dfrac{V_{\text{out}}}{R_2}$.
+			\item Fit per $h$: \ $\Vsoglia = k + m(1/\lambda)$,\quad $h = m\,e/c$ \ (se $\lambda$ in nm: $h = m\,e\,10^{-9}/c$).
+			\item Regime fotoconduttivo: $\displaystyle \Ipd=\eta(\nu)\frac{e}{h\nu}W$ \quad (responsività $R=\eta e/h\nu$).
+		\end{itemize}
+	\end{frame}
+	
+	\begin{frame}{(Backup) Spazi per figure e tabelle}
+		
+		\begin{columns}[T,totalwidth=\textwidth]
+			% ====== COLONNA SINISTRA: Immagine ======
+			\begin{column}{0.48\textwidth}
+				\begin{figure}
+					\centering
+					\includegraphics[width=\linewidth]{response.png}
+					\caption{Risposta spettrale del fotodiodo}
+				\end{figure}
+			\end{column}
+			
+			% ====== COLONNA DESTRA: Tabella ======
+			\begin{column}{0.5\textwidth}
+				\small
+				\setlength{\tabcolsep}{6pt} % spazio tra colonne
+				\renewcommand{\arraystretch}{1.2} % spazio verticale tra righe
+				\begin{table}
+					\centering
+					\begin{tabular}{c S[scientific-notation = true, table-format=1.2e-3] S[scientific-notation = true, table-format=1.2e-3]}
+						\toprule
+						\textbf{LED (colore)} & 
+						{$W_{20\,\mathrm{mA}}^{(\mathrm{meas})}\,[\mathrm{W}]$} & 
+						{$W_{20\,\mathrm{mA}}^{(\mathrm{ds})}\,[\mathrm{W}]$} \\
+						\midrule
+						Arancio & 1.68e-5 & 2.86e-3 \\
+						Rosso   & 5.37e-6 & 1.88e-3 \\
+						Giallo  & 1.48e-5 & 1.22e-3 \\
+						Verde   & 1.62e-4 & 3.44e-3 \\
+						Blu     & 4.26e-4 & 2.52e-3 \\
+						Viola   & 1.09e-3 & 7.24e-3 \\
+						\bottomrule
+					\end{tabular}
+					\caption{\scriptsize Confronto tra potenze misurate e da datasheet a 20 mA.}
+				\end{table}
+			\end{column}
+		\end{columns}
+		
+	\end{frame}
+	
+	\begin{frame}{Parte 2: Concetti teorici di base}
+		\begin{columns}[T]
+			\column{0.52\linewidth}
+			
+			\begin{itemize}
+				\item Legge di Lambert-Beer: modello per quantificare il processo di assorbimento della radiazione elettromagnetica. Stima probabilità di assorbimento in termini di sezione d'urto di assorbimento e densità di centri assorbitori.
+				\[
+				I(x) = I_0 e^{- \alpha (\lambda) x}
+				\]
+				x coordinata all'interno del materiale
+				
+				\item Definisco poi $T \equiv \frac{I(d)}{I_0}$ trasmittanza e $A = - \log \left( \frac{I(d)}{I_0} \right)$ assorbanza, dove $d$ è lo spessore del materiale.
+				
+			\end{itemize}
+			
+			\column{0.44\linewidth}
+			
+			\begin{itemize}
+				\item Nel caso dei liquidi $\alpha(\lambda) = c \epsilon(\lambda)$, dove $c$ è la concetrazione della sostanza di interesse nel liquido e $\epsilon(\lambda)$ è il coefficiente di assorbimento molare.
+				
+				\item In conclusione, nel caso in esame scrivo: $A = [c \epsilon(\lambda)] d$
+			\end{itemize}
+			
+			
+		\end{columns}
+		
+	\end{frame}
+	
+	\begin{frame}{Parte 2: Obiettivi e outline}
+		\begin{block}{Passaggi principali}
+			\begin{itemize}
+				\item Preparazione campioni liquido di interesse a varie concentrazioni.
+				\item Acquisizioni fotocorrenti del fotodiodo generate da luce emessa dai vari LED a disposizione che attraversa i vari campioni.
+				\item Fit lineare per ogni lunghezza d'onda per stimare il relativo coefficiente di assorbimento.
+				\item Spettro del coefficiente di assorbimento e comparazione con risultati presenti in letteratura.
+			\end{itemize}
+		\end{block}
+	\end{frame}
+	
+	\begin{frame}{Parte 2: Preparazione campioni di liquido}
+		
+		Sono state utilizzate 5 cuvette, riempite ciascuna con una parte di Powerade ed una di acqua, di seguito le concentrazioni ottenute:
+		
+		\begin{table}[h]
+			\centering
+			\begin{tabular}{ccc}
+				\toprule
+				\textbf{Conc [V]} & \(\mathbf{V_W}\) & \(\mathbf{V_L}\) \\
+				\midrule
+				$0.0 \pm 0.1$ & $4.0 \pm 0.5$ & $0.0 \pm 0.5$ \\
+				$0.3 \pm 0.1$ & $3.0 \pm 0.5$ & $1.0 \pm 0.5$ \\
+				$0.50 \pm 0.09$ & $2.0 \pm 0.5$ & $2.0 \pm 0.5$ \\
+				$0.8 \pm 0.1$ & $1.0 \pm 0.5$ & $3.0 \pm 0.5$ \\
+				$1.0 \pm 0.1$ & $0.0 \pm 0.5$ & $4.0 \pm 0.5$ \\
+				\bottomrule
+			\end{tabular}
+			\caption{Tabella dei valori delle concentrazioni di Powerade diluito in acqua utilizzate}
+		\end{table}
+		
+	\end{frame}
+	
+	\begin{frame}{Parte 2: Acquisizione fotocorrenti}
+		
+		Descrizione presa dati:
+		
+		\begin{itemize}
+			\item Per ogni LED si è selezionato un voltaggio al quale questo aveva un'emissione il più possibile brillante.
+			\item Al dato voltaggio di alimentazione si è campionato più volte il potenziale del fotodiodo con sweepbias.ipynb, cambiando di volta in volta le cuvette, passando a campioni sempre più concentrati di powerade.
+			\item Il potenziale è stato tradotto in corrente, proporzionale all'intensità luminosa, da questa si è calcolata l'assorbanza per ogni lunghezza d'onda studiata.
+			L'assorbanza è stata calcolata misurando per ogni acquisizione anche la fotocorrente prodotta dalla luce dei LED in uscita dalla cuvetta piena d'acqua (intensità luminosa di riferimento)
+			
+			\item Si è esguito un fit lineare della concentrazione in funzione dell'assorbanza con il modello: 
+			
+			\[
+			\frac{V_L}{V_W + V_L} =  - \log \frac{I(d)}{I_0} \cdot M + C
+			\]
+			
+		\end{itemize}
+		
+	\end{frame}
+	
+	\begin{frame}{Parte 2. Fit e risultati ottenuti.}
+		Sono stati eseguiti 6 fit, uno per ogni LED (rosso, arancione, giallo, verde, blu, e viola), di seguito si riportano i risultati del fit per il LED rosso a scopo di esempio:
+		
+		\vspace{0.5cm}
+			
+			\begin{table}[h]
+				\centering
+				\begin{tabular}{c c}
+					\hline
+					\textbf{Parametro} & \textbf{Valore} \\
+					\hline
+					$\chi^{2}_{\mathrm{rid}}$ & $0.7 \pm 0.8$ \\
+					M & $11 \pm 2$ \\
+					Q & $-0.02 \pm 0.09$ \\
+					\hline
+				\end{tabular}
+			\end{table}
+		
+		\vspace{0.5cm}
+		
+		Per tutti gli altri fit sono stati ottenuti $\chi^2_{rid}$ simili, cioè entro una sigma da 1 e offset tutti confrontabili con zero, a supporto della validità dei risultati ottenuti.
+		
+	\end{frame}
+	
+	\begin{frame}{Parte 2. Fit e risultati ottenuti.}
+		
+		\begin{figure}
+			\centering
+			\includegraphics[width=0.9\textwidth, height=0.75\textheight, keepaspectratio]{plot_fit_conc_pres_vs_A_rosso.png}
+			\caption{Grafico di fit per LED rosso: concentrazione campioni vs assorbanza.}
+		\end{figure}
+		
+	\end{frame}
+
+	\begin{frame}{Parte 2. Spettro del coefficiente di assorbimento.}
+		
+		Da ogni fit concentrazione vs assorbanza dei LED è stato ricavato il coefficiente di assorbimento del liquido, alla lunghezza del LED utilizzato; i valori ottenuti sono riportati nella seguente tabella:
+		
+		\vspace{0.5cm}
+		
+		\begin{table}[h]
+			\centering
+			\begin{tabular}{c c c}
+				\hline
+				\textbf{Colore} & $\boldsymbol{\lambda\,[\mathrm{nm}]}$ & $\boldsymbol{\alpha\,[\mathrm{m^{-1}}]}$ \\
+				\hline
+				Rosso      & $625 \pm 7$        & $7 \pm 1$ \\
+				Arancione  & $604 \pm 8$        & $46 \pm 8$ \\
+				Giallo     & $588 \pm 7$        & $6 \pm 1$ \\
+				Verde      & $532 \pm 13$       & $31 \pm 5$ \\
+				Blu        & $469 \pm 7$        & $(9 \pm 2)\cdot 10$ \\
+				Viola      & $401 \pm 5$        & $(7 \pm 1)\cdot 10$ \\
+				\hline
+			\end{tabular}
+			\caption{Valori di lunghezza d’onda e coefficienti di assorbimento.}
+		\end{table}
+		
+		\vspace{0.5cm}
+		
+	\end{frame}
+
+
+\begin{frame}{Parte 2. Spettro del coefficiente di assorbimento.}
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.9\textwidth, height=0.75\textheight, keepaspectratio]{plot_coeffasb_vs_lambda1.png}
+		\caption{Coefficiente di assorbimento Powerade in funzione della lunghezza d'onda dei LED utilizzati.}
+	\end{figure}
+	
+\end{frame}
+
+
+	
+\end{document}
