@@ -14,6 +14,7 @@ t = np.linspace(0, duration, int(sampling_rate * duration), endpoint=False)
 x = square(2 * np.pi * f * t)
 
 # Plot
+plt.figure(figsize=(10, 6), dpi=100)
 plt.plot(t, x)
 plt.xlabel("Time (s)")
 plt.ylabel("Amplitude")
