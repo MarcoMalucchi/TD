@@ -1,0 +1,5 @@
+task8_1bit_wire.txt
+task8_2bit_wire.txt
+task8_3bit_wire.txt
+task8_4bit_wire.txt
+task8_5bit_wire.txt
