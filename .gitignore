@@ -14,3 +14,4 @@ PENDOLO/**/*.bin
 # Large PDFs (Adding these will stop them from being updated/uploaded)
 TD_appunti_1.pdf
 TD_appunti2.pdf
+*.pdf
