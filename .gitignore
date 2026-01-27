@@ -1,0 +1,17 @@
+# LaTeX temporary/junk files
+*.log
+*.aux
+*.synctex.gz
+*.toc
+*.fls
+*.fdb_latexmk
+*.out
+
+# Data files (The "Garbage" files)
+*.bin
+PENDOLO/**/*.bin
+
+# Large PDFs (Adding these will stop them from being updated/uploaded)
+TD_appunti_1.pdf
+TD_appunti2.pdf
+*.pdf
