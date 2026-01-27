@@ -1,0 +1,658 @@
+% !TEX program = pdflatex
+% =============================================================================
+% S09 - Registri a scorrimento e generatore pseudocasuale
+% =============================================================================
+
+\documentclass[aspectratio=169,10pt]{beamer}
+
+% --- Tema stabile -------------------------------------------------------------
+\usetheme{Madrid}
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{navigation symbols}{}
+
+% --- Pacchetti ----------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{siunitx}
+\sisetup{per-mode=symbol,detect-all}
+\usepackage{graphicx}
+\usepackage{xspace}
+\usepackage{booktabs}
+\usepackage{tikz}
+
+% --- Palette ------------------------------------------------------------------
+\definecolor{tdBlue}{RGB}{13,59,102}
+\definecolor{tdCyan}{RGB}{0,167,196}
+\definecolor{tdGreen}{RGB}{46,212,119}
+\definecolor{tdDark}{RGB}{11,12,16}
+
+\setbeamercolor{normal text}{fg=tdDark,bg=white}
+\setbeamercolor{structure}{fg=tdBlue}
+\setbeamercolor{frametitle}{fg=white,bg=tdBlue}
+\setbeamercolor{block title}{fg=white,bg=tdBlue}
+\setbeamercolor{block body}{bg=tdBlue!5}
+
+% --- Banner di copertina ------------------------------------------------------
+\newcommand{\TitleBanner}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \node[anchor=north west, inner sep=0pt] at (current page.north west)
+      {\includegraphics[width=\paperwidth]{copertina.png}};
+  \end{tikzpicture}
+  \vspace{0.28\paperheight}
+}
+\addtobeamertemplate{title page}{\TitleBanner}{}
+
+% --- Icone testuali -----------------------------------------------------------
+\newcommand{\NAND}{\textsc{NAND}\xspace}
+\newcommand{\NOT}{\textsc{NOT}\xspace}
+\newcommand{\XOR}{\textsc{XOR}\xspace}
+\newcommand{\FF}{\textsc{FF}\xspace}
+
+% --- ROADMAP ---------------------------------------------------------------
+\newcommand{\RoadBoxActive}[2]{%
+  \setbeamercolor{roadbox}{bg=tdBlue, fg=white}
+  \begin{beamercolorbox}[wd=\dimexpr.28\linewidth\relax,ht=1.15cm,dp=3pt,center,rounded=true]{roadbox}
+    \large \hyperlink{#1}{#2}
+  \end{beamercolorbox}
+}
+\newcommand{\RoadBoxInactive}[2]{%
+  \setbeamercolor{roadbox}{bg=tdBlue!10, fg=tdDark}
+  \begin{beamercolorbox}[wd=\dimexpr.28\linewidth\relax,ht=1.15cm,dp=3pt,center,rounded=true]{roadbox}
+    \large \hyperlink{#1}{#2}
+  \end{beamercolorbox}
+}
+
+% Selettore
+\newcommand{\RoadPick}[3]{%
+  \ifnum\value{section}=#1
+    \RoadBoxActive{#2}{#3}%
+  \else
+    \RoadBoxInactive{#2}{#3}%
+  \fi
+}
+
+% Roadmap frame
+\renewcommand{\RoadmapFrame}{%
+  \begin{frame}{Roadmap}
+    \centering
+    \vfill
+    \begin{minipage}{0.8\linewidth}
+      \makebox[\linewidth]{%
+        \RoadPick{1}{sec:intro}{Obiettivi}\hfill
+        \RoadPick{2}{sec:div}{Divisori D-FF}%
+      }\\[12mm]
+      \makebox[\linewidth]{%
+        \RoadPick{3}{sec:shift}{Registri MC14557}\hfill
+        \RoadPick{4}{sec:lfsr}{Generatore pseudocasuale}%
+      }\\[12mm]
+      \makebox[\linewidth]{%
+        \RoadPick{5}{sec:issues}{Problemi \& soluzioni}\hfill
+        \RoadPick{6}{sec:end}{Conclusioni}%
+      }
+    \end{minipage}
+    \vfill
+  \end{frame}
+}
+
+\AtBeginSection[]{\RoadmapFrame}
+
+% --- Metadati -----------------------------------------------------------------
+\title{S09 -- Registri a scorrimento e generatore pseudocasuale}
+\subtitle{Dai divisori ai LFSR: MC14557, CD4013 e ciclo di feedback}
+\author{Nome Cognome \\ \small T10}
+\institute{Tecnologie Digitali}
+\date{\today}
+
+% ============================ DOCUMENTO =======================================
+\begin{document}
+
+% TITOLO
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ============================ SEZIONE 1 =======================================
+\section{Obiettivi}
+\begin{frame}{Obiettivi della sessione}\hypertarget{sec:intro}{}
+  \begin{block}{Cosa abbiamo costruito e cosa abbiamo analizzato}
+    \begin{itemize}
+      \item Divisori di frequenza con \FF{} D (CD4013).
+      \item Registro a scorrimento programmabile MC14557.
+      \item Misura del \textit{ritardo di propagazione} per vari valori di \(n\).
+      \item Generatore di bit pseudocasuali tramite XOR e feedback.
+      \item Analisi della periodicità e confronto con la teoria.
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+% ============================ SEZIONE 2 =======================================
+% ==================== DIVISORE PER 2 =========================================
+\section{Divisori D-FF}
+\begin{frame}{Divisore di frequenza per 2}\hypertarget{sec:div}{}
+  \vfill
+  \begin{columns}[c,onlytextwidth]
+
+    % --------- Colonna sinistra: testo + schema (con comparsa) ---------------
+    \column{0.52\textwidth}
+    \begin{itemize}[<+->]
+      \item Collegamento: \(\overline{Q} \to D\), clock su fronte di salita.
+      \item In uscita si ottiene \(f_{\text{out}} = f_{\text{in}}/2\).
+      \item È il blocco base per contatori, divisori e registri a scorrimento.
+    \end{itemize}
+
+    \vspace{3mm}
+
+    \onslide<2->{%
+      \begin{figure}
+        \centering
+        % schema del divisore per 2 (flip–flop singolo con feedback su D)
+        \includegraphics[width=\linewidth]{schema_divisore2.png}
+        \caption{\small\textit{Schema del divisore di frequenza per 2 con \FF{} D.}}
+      \end{figure}
+    }
+
+    % --------- Colonna destra: forme d’onda misurate -------------------------
+    \column{0.48\textwidth}
+    \onslide<3->{%
+      \begin{figure}
+        \centering
+        \includegraphics[width=\linewidth]{Divisore_fmezzi.pdf}
+        \caption{\small\textit{Forme d’onda sperimentali: clock in ingresso (Ch1) e uscita divisa per 2 (Ch2).}}
+      \end{figure}
+    }
+
+  \end{columns}
+  \vfill
+\end{frame}
+
+% ==================== DIVISORE PER 3 =========================================
+\begin{frame}{Divisore di frequenza per 3}
+  \vfill
+  \begin{columns}[c,onlytextwidth]
+
+    % --------- Colonna sinistra: testo + schema + tabella --------------------
+    \column{0.52\textwidth}
+
+    % Testo che compare per primo
+    \begin{itemize}[<+->]
+      \item Due \FF{} D in cascata con rete di feedback logica.
+      \item Condizione di feedback: \(IN = \overline{Q_1^n}\cdot Q_2^n\).
+      \item In regime stazionario si ottiene \(f_{\text{out}} = f_{\text{in}}/3\).
+    \end{itemize}
+
+    \vspace{2mm}
+
+    % Schema circuitale + tabella di verità (secondo step)
+    \onslide<2->{%
+
+      \vspace{1mm}
+
+      \centering
+      \small
+      \begin{tabular}{cccc}
+        \toprule
+        Stato \(n\) &
+        \(IN = \overline{Q_1^n}\cdot Q_2^n\) &
+        Stato \(n+1\) &
+        \(OUT = Q_2^{n+1}\) \\
+        \midrule
+        00 & 1 & 10 & 0 \\
+        10 & 1 & 11 & 1 \\
+        01 & 1 & 10 & 0 \\
+        11 & 0 & 01 & 1 \\
+        \bottomrule
+      \end{tabular}
+    }
+
+    % --------- Colonna destra: forme d’onda misurate -------------------------
+    \column{0.48\textwidth}
+    \onslide<3->{%
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.4\linewidth]{schema_divisore_freq_task3.png}
+        
+      \end{figure}
+      \caption{\small\textit{Schema del divisore di frequenza per 3 con due \FF{} D e porta \NAND/\AND\ di feedback.}}
+      \begin{figure}
+        \centering
+        \includegraphics[width=0.9\linewidth]{Divisore_fterzi.pdf}
+        
+      \end{figure}
+      \caption{\small\textit{Forme d’onda sperimentali}}
+    }
+
+  \end{columns}
+  \vfill
+\end{frame}
+
+
+% ============================ SEZIONE 3 =======================================
+\section{Registro MC14557}
+
+% --- SLIDE 1 MODIFICATA ---
+\begin{frame}{Registro lineare a lunghezza variabile}\hypertarget{sec:shift}{}
+\begin{columns}[c] % [c] per centrare verticalmente il contenuto
+ \centering
+ \column{0.58\textwidth}
+    % [<+->] fa apparire gli elementi uno per uno
+ \begin{itemize}[<+->]
+ \item Il chip contiene blocchi da 1, 2, 4, 8, 16 e 32 bit.
+ \item Gli ingressi \(L_i\) selezionano quali blocchi attivare.
+ \item Lunghezza: \(n = 1 + L_1 + 2L_2 + \dots + 32L_{32}\).
+ \item Ingressi cruciali: A/B, CE, RESET.
+ \end{itemize}
+
+ \column{0.42\textwidth}
+    % L'immagine appare dopo i 4 punti elenco (quindi allo step 5)
+    \onslide<5->{%
+      \begin{figure}
+        \centering
+        \includegraphics[width=\linewidth]{piedinatura_MC14557.png}
+        
+      \end{figure}
+      \caption{\small Piedinatura e schema a blocchi del MC14557.}
+    }
+ \end{columns}
+\end{frame}
+
+% --- SLIDE 2 MODIFICATA ---
+\begin{frame}{Ritardo di propagazione}
+  \begin{columns}[c]
+    % --- Colonna Sinistra: Testo ---
+    \column{0.55\textwidth}
+    \centering
+    % [<+->] fa apparire i 3 punti elenco in sequenza
+ \begin{itemize}[<+->]
+ \item Misura: differenza temporale tra ingresso \(A\) e uscita \(Q\).
+ \item Ritardo oscillante con \(n\).
+ \item Necessario sincronizzare W1 e W2.
+ \end{itemize}
+
+    % --- Colonna Destra: Immagini in stack ---
+    \column{0.45\textwidth}
+    % Prima immagine: appare allo step 4 (dopo i 3 punti elenco)
+    \onslide<4->{%
+      \begin{figure}
+        \centering
+        % Imposto un'altezza massima per farle stare entrambe
+        \includegraphics[width=\linewidth, height=0.35\textheight, keepaspectratio]{reg_scorr_32bit.png}
+        
+      \end{figure}
+      \centering
+      \caption{\small Forme d'onda 32 bit (sopra), 64 bit (sotto)}
+    }
+    \vspace{0.2em} % Un po' di spazio tra le immagini
+    % Seconda immagine: appare allo step 5
+    \onslide<5->{%
+      \begin{figure}
+        \centering
+        \includegraphics[width=\linewidth, height=0.35\textheight, keepaspectratio]{reg_scorr_64bit.png}
+      \end{figure}
+            
+
+    }
+  \end{columns}
+\end{frame}
+
+% ============================ SEZIONE 4 =======================================
+\section{Generatore pseudocasuale}
+\begin{frame}{Architettura del generatore}\hypertarget{sec:lfsr}{}
+  \begin{itemize}
+    \item Feedback: XOR tra uscita del MC14557 e \FF{} CD4013.
+    \item Innesco: caricare tutti 1 con ingresso A → quindi selezionare B.
+  \end{itemize}
+  \centering
+  \includegraphics[width=0.4\linewidth, angle=90]{Circuito_realizzato_task8_conCavetto.jpg}
+\end{frame}
+
+\begin{frame}{Analisi della periodicità}
+  \begin{columns}[c]
+    % --- Colonna Sinistra: Testo e Tabella ---
+    \column{0.58\textwidth}
+    
+    % Testo a comparsa
+    \begin{itemize}[<+->]
+      \item Dai calcoli emerge:
+      \begin{itemize}
+        \item \(n=1,2,3,5\): periodo max \(2^{m}-1\).
+        \item \(n=4\): compaiono sottocicli, periodo ridotto ($L=21$).
+      \end{itemize}
+      \item Confronto tra teoria e misure:
+    \end{itemize}
+
+    % Tabella a comparsa (appare dopo il testo)
+    \onslide<3->{
+      \vspace{0.5em}
+      \centering
+      % \resizebox adatta la tabella alla larghezza della colonna
+      \resizebox{\linewidth}{!}{%
+        \begin{tabular}{c c l l c}
+          \toprule
+          \textbf{n} & \textbf{m=n+1} & \textbf{Stato iniz.} & \textbf{Sequenza teorica (da Q)} & \textbf{\(L_{teo}\)} \\
+          \midrule
+          1 & 2 & 11 & 1 1 0 & 3 \\
+          2 & 3 & 111 & 1 1 0 1 1 1 1 & 7 \\
+          3 & 4 & 1111 & 1 1 1 1 0 0 0 1 0 0 1 1 0 1 0 & 15 \\
+          4 & 5 & 11111 & 1 1 1 1 1 0 0 0 0 1 0 0 0 1 1 0 0 1 0 1 0 & 21 \\
+          5 & 6 & 111111 & 111111000001\dots (seq. max) & 63 \\
+          \bottomrule
+        \end{tabular}%
+      }
+
+    }
+
+    % --- Colonna Destra: Confronto Grafico ---
+    \column{0.42\textwidth}
+    \onslide<4->{
+      \begin{figure}
+        \centering
+        % Simulazione
+        \includegraphics[width=\linewidth, height=0.35\textheight, keepaspectratio]{download.png}
+        
+        \vspace{0.5em} % Spazio tra le due immagini
+        
+        % Acquisizione reale
+        \includegraphics[width=\linewidth, height=0.35\textheight, keepaspectratio]{task8_4bit_wire.png}
+      \end{figure}
+              \caption{\small Simulazione VS Acquisizione per ($n=4$).}
+
+    }
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Estrazione sequenza di bit dal segnale analogico}
+
+  % =================== COMPARSA 1: BLOCCO SPIEGAZIONE ======================
+  \onslide<1->{
+  \begin{block}{Come MATLAB ricava la sequenza di bit}
+    \begin{itemize}
+      \item Si identificano i fronti di salita del clock tramite soglia
+            \(V_{\mathrm{thr,clk}} = 2.5\,\text{V}\).
+      \item Si calcola il numero medio di campioni per periodo del clock 
+            direttamente dai dati sperimentali.
+      \item Si campiona l’uscita \(V_{\mathrm{out}}\) a metà di ogni periodo 
+            \(\Rightarrow\) valore stabile \(\rightarrow\) bit \(0/1\).
+      \item Il periodo \(L\) si determina trovando quando la sequenza si ripete.
+    \end{itemize}
+  \end{block}
+  }
+
+  \vspace{3mm}
+
+  % =================== COMPARSA 2: IMMAGINI ======================
+  \onslide<2->{
+  \begin{columns}[T,onlytextwidth]
+
+    % COLONNA SINISTRA: Clock
+    \column{0.48\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{clock_campionato.png}
+      \caption{\small Clock e fronti di salita (\(n=4\)).}
+
+    % COLONNA DESTRA: Uscita campionata
+    \column{0.48\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{ch2_campionato.png}
+      \caption{\small Uscita campionata e bit estratti (\(n=4\)).}
+
+  \end{columns}
+  }
+
+\end{frame}
+
+\begin{frame}{Confronto uscita: MATLAB vs misura}
+
+  \centering
+
+  \begin{columns}[c,onlytextwidth]
+    % ===================== COLONNA SINISTRA: MATLAB ======================
+    \column{0.48\textwidth}
+      \centering
+      \only<1>{
+        \includegraphics[width=\linewidth]{1bit_campionato.png}\\[1mm]
+        {\small MATLAB, registro a \(n=1\) bit}
+      }
+      \only<2>{
+        \includegraphics[width=\linewidth]{2bit_campionato.png}\\[1mm]
+        {\small MATLAB, registro a \(n=2\) bit}
+      }
+      \only<3>{
+        \includegraphics[width=\linewidth]{3bit_campionato.png}\\[1mm]
+        {\small MATLAB, registro a \(n=3\) bit}
+      }
+      \only<4>{
+        \includegraphics[width=\linewidth]{ch2_campionato.png}\\[1mm]
+        {\small MATLAB, registro a \(n=4\) bit}
+      }
+      \only<5>{
+        \includegraphics[width=\linewidth]{5bit_campionato.png}\\[1mm]
+        {\small MATLAB, registro a \(n=5\) bit}
+      }
+
+    % ===================== COLONNA DESTRA: SPERIMENTALE ==================
+    \column{0.48\textwidth}
+      \centering
+      \only<1>{
+        \includegraphics[width=\linewidth]{task8_1bit_wire.png}\\[1mm]
+        {\small Misura sperimentale, \(n=1\)}
+      }
+      \only<2>{
+        \includegraphics[width=\linewidth]{task8_2bit_wire.png}\\[1mm]
+        {\small Misura sperimentale, \(n=2\)}
+      }
+      \only<3>{
+        \includegraphics[width=\linewidth]{task8_3bit_wire.png}\\[1mm]
+        {\small Misura sperimentale, \(n=3\)}
+      }
+      \only<4>{
+        \includegraphics[width=\linewidth]{task8_4bit_wire_nuove.png}\\[1mm]
+        {\small Misura sperimentale, \(n=4\)}
+      }
+      \only<5>{
+        \includegraphics[width=\linewidth]{task8_5bit_wire.png}\\[1mm]
+        {\small Misura sperimentale, \(n=5\)}
+      }
+  \end{columns}
+
+  \vspace{2mm}
+  \onslide<1-5>{
+    
+  }
+
+\end{frame}
+
+\begin{frame}{Periodo massimo di un LFSR}
+
+  \begin{block}{Obiettivo}
+    Variando il numero di bit \(n\) del registro a scorrimento si vuole
+    determinare il \textbf{massimo periodo di ripetizione} osservabile
+    con il circuito montato, usando tre punti di vista:
+    \begin{itemize}[<+->]
+      \item \textbf{Teorico}: previsione del periodo di un LFSR a \(n\) bit
+            con polinomio caratteristico primitivo (\(L = 2^n-1\)).
+      \item \textbf{Numerico}: simulazione dell’LFSR e calcolo esplicito
+            del periodo della sequenza.
+      \item \textbf{Sperimentale}: misura dell’uscita del registro e
+            ricostruzione della stringa di bit.
+    \end{itemize}
+  \end{block}
+
+  \vspace{3mm}
+
+  \uncover<4->{
+    \begin{block}{Strategia}
+      Si utilizza il chip MC14557 configurato con un certo numero di bit
+      attivi: dapprima \(n=7\) (registro a 8 bit), poi \(n=6\),
+      confrontando il periodo atteso con quello misurato.
+    \end{block}
+  }
+
+\end{frame}
+\begin{frame}{Scelta dei parametri di misura}
+
+  \begin{block}{Vincoli sperimentali}
+    \begin{itemize}[<+->]
+      \item Più bit \(\Rightarrow\) periodo più lungo, ma anche
+            \textbf{tempo di misura} più lungo.
+      \item AD2: massimo \(\SI{1e8}{Sa/s}\), ma con ADC a 14 bit il numero
+            di punti utili è limitato (\(\sim 1.6\times10^4\)).
+      \item Si vuole mantenere:
+        \begin{itemize}
+          \item numero di bit \(n\) il più alto possibile;
+          \item frequenza di clock non troppo elevata, per avere
+                \(\ge 4\text{--}5\) campioni per livello logico;
+          \item numero di punti campionati il più alto possibile.
+        \end{itemize}
+    \end{itemize}
+  \end{block}
+
+  \vspace{2mm}
+
+  \begin{block}{Scelte finali dei parametri} \small
+    \begin{itemize}[<+->]
+      \item Frequenza di campionamento:
+            \(f_{\mathrm{sampling}} = \SI{1e5}{Sa/s}\), con \(N = 10000\) punti
+            \(\Rightarrow\) finestra temporale \(\approx \SI{0.1}{s}\).
+      \item Generatore W2 lento, \(f_{W2} = \SI{5}{Hz}\),
+            in modo che la semionda bassa duri \(\sim\SI{0.1}{s}\)
+            \(\Rightarrow\) si misura un singolo periodo durante la semionda bassa.
+      \item \textbf{Configurazione iniziale}: MC14557 a \(7\) bit
+            \(\Rightarrow\) LFSR a \(8\) bit, periodo atteso
+            \(L_{\mathrm{teo}} = 2^8-1 = 255\) stati
+            (in assenza di sottocicli).
+      \item Frequenza di clock scelta:
+            \(f_{\mathrm{clock}} \approx \SI{2550}{Hz}\),
+            circa 5 volte inferiore a \(f_{\mathrm{sampling}}\).
+    \end{itemize}
+  \end{block}
+
+\end{frame}
+\begin{frame}{Configurazione MC14557 a 7 bit (LFSR a 8 bit)}
+
+  \begin{columns}[c,onlytextwidth]
+    \column{0.52\textwidth}
+      \begin{itemize}[<+->]
+        \item Teoricamente, con polinomio primitivo ci si aspetta
+              un periodo \(L_{\mathrm{teo}} = 2^8 - 1 = 255\) stati.
+        \item In misura si osserva però una sequenza che si ripete
+              \(\sim 4\) volte nella finestra di \(\SI{0.1}{s}\).
+        \item Stimando il numero di bit distinti nel singolo ciclo
+              si trova un \textbf{sottociclo} di circa \(63\) stati,
+              molto inferiore a \(255\).
+        \item Conclusione: la combinazione di tap usata sul MC14557
+              non corrisponde a un polinomio primitivo a 8 bit,
+              quindi l’LFSR non esplora tutti gli stati possibili.
+      \end{itemize}
+
+    \column{0.48\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{task10_misura1.png}
+      \caption{\small Acquisizione con MC14557 configurato a 7 bit:
+               il ciclo si ripete più volte nel tempo di osservazione,
+               evidenziando un sottociclo.}
+  \end{columns}
+
+\end{frame}
+\begin{frame}{Configurazione MC14557 a 6 bit (LFSR a 7 bit)}
+
+  \begin{block}{Nuova configurazione}
+    \begin{itemize}[<+->]
+      \item Per evitare i sottocicli si riduce il numero di bit:
+            MC14557 configurato a \(6\) bit \(\Rightarrow\) LFSR a \(7\) bit.
+      \item Teoricamente ci si aspetta un periodo
+            \(L_{\mathrm{teo}} = 2^7 - 1 = 127\) stati.
+      \item Si mantiene la stessa strategia di misura:
+            \(f_{\mathrm{sampling}} = \SI{1e5}{Sa/s}\),
+            \(N = 10000\) punti,
+            \(f_{\mathrm{clock}} \approx \SI{1270}{Hz}\).
+    \end{itemize}
+  \end{block}
+
+  \vspace{2mm}
+
+  \begin{columns}[c,onlytextwidth]
+    \column{0.5\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{task10_misura2.png}
+      \caption{\small Acquisizione di un periodo (circa) del ciclo a 7 bit.}
+
+    \column{0.5\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{task10_misura2_1.png}
+      \caption{\small Acquisizione con clock doppio: si osservano due periodi completi.}
+  \end{columns}
+
+\end{frame}
+\begin{frame}{Confronto teorico, numerico e sperimentale (n = 6)}
+
+  \begin{block}{Periodo atteso e calcolo numerico}
+    \begin{itemize}[<+->]
+      \item \textbf{Teorico}: per l’LFSR a \(7\) bit con polinomio scelto
+            ci si aspetta una stringa binaria di
+            \(L_{\mathrm{teo}} = 127\) bit che si ripete ciclicamente.
+      \item \textbf{Numerico}: ripetendo le operazioni dell’Homework 1
+            si ottiene una stringa binaria teorica di lunghezza 127,
+            che definisce il contenuto del registro a ogni colpo di clock.
+      \item \textbf{Sperimentale}: applicando il codice MATLAB del Task 9
+            ai dati misurati si ricostruisce la stringa binaria
+            sperimentale.
+    \end{itemize}
+  \end{block}
+
+  \vspace{2mm}
+
+  \begin{columns}[c,onlytextwidth]
+    \column{0.52\textwidth}
+      \small
+      \uncover<4->{
+      \begin{itemize}
+        \item Confrontando le due stringhe si vede che:
+          \begin{itemize}
+            \item coincidono bit-a-bit per i primi \(127\) bit;
+            \item dopo il 127-esimo bit la sequenza sperimentale
+                  ricomincia dall’inizio, come previsto.
+          \end{itemize}
+        \item Non si osservano sottocicli: il periodo sperimentale
+              coincide con quello teorico.
+      \end{itemize}
+      }
+
+    \column{0.48\textwidth}
+      \centering
+      \uncover<3->{
+        \includegraphics[width=\linewidth]{6bit_campionato.png}
+        \caption{\small Uscita campionata e bit estratti (\(n = 6\)):
+                 la stringa ricostruita ha periodo \(L = 127\).}
+      }
+  \end{columns}
+
+\end{frame}
+
+
+
+
+% ============================ SEZIONE 5 =======================================
+\section{Problemi riscontrati e soluzioni}
+\begin{frame}{Criticità tipiche}\hypertarget{sec:issues}{}
+  \begin{itemize}
+    \item \textbf{Pin flottanti}: CAUSA \(\Rightarrow\) instabilità logica. SOLUZIONE: fissare CE, RESET, A/B.
+    \item \textbf{Carico del LED}: abbassa Q → usare resistenza elevata.
+  \end{itemize}
+\end{frame}
+
+% ============================ SEZIONE 6 =======================================
+\section{Conclusioni}
+\begin{frame}\hypertarget{sec:end}{}
+  \begin{center}
+    \Huge \textcolor{tdBlue}{\textbf{Grazie per l'attenzione!}}\\[1em]
+    \Large Domande?
+  \end{center}
+\end{frame}
+
+
+
+
+\end{document}
