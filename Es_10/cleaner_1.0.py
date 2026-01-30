@@ -10,15 +10,20 @@ def process_and_clean_data(filename, sigma_threshold=1.5):
     sync_word = 0xAAAA
     results = []
 
-    with open(filename, "rb") as f:
-        content = f.read()
+    try:
+        with open(filename, "rb") as f:
+            content = f.read()
+    except FileNotFoundError:
+        print("File not found!")
+        return None
 
+    # --- BINARY PARSING ---
     i = 0
     while i <= len(content) - packet_size:
         current_header, = struct.unpack_from("<H", content, i)
         if current_header == sync_word:
             _, x_raw, y_raw, z_raw, timestamp = struct.unpack_from(packet_fmt, content, i)
-            # Endianness swap for Big-Endian MPU-6050 registers
+            # Big-Endian swap for MPU-6050 registers
             x = struct.unpack(">h", struct.pack("<h", x_raw))[0]
             y = struct.unpack(">h", struct.pack("<h", y_raw))[0]
             z = struct.unpack(">h", struct.pack("<h", z_raw))[0]
@@ -27,55 +32,76 @@ def process_and_clean_data(filename, sigma_threshold=1.5):
         else:
             i += 1 
 
-    data = np.array(results)
-    t_raw = data[:, 0]
-    raw_signals = [data[:, 1], data[:, 2], data[:, 3]] # X, Y, Z
+    if not results:
+        print("No valid packets found!")
+        return None
 
-    # 2. Statistical Masking (Removes the Vertical Bars/Spikes)
-    # We create a mask for points that are NOT outliers
+    data = np.array(results)
+    
+    # --- FIX: Sort and Filter Time (Removes the 'Squeeze') ---
+    data = data[data[:, 0].argsort()]
+    t_full = data[:, 0]
+    
+    # Identify and remove large initialization gaps
+    diffs = np.diff(t_full)
+    if len(diffs) > 0 and np.max(diffs) > 1.0:
+        gap_idx = np.where(diffs > 1.0)[0][-1]
+        data = data[gap_idx + 1:]
+    
+    # Trim 5 samples from start/end to remove transients
+    data = data[5:-5] 
+    
+    t_raw = data[:, 0]
+    sigs_raw = [data[:, 1], data[:, 2], data[:, 3]]
+
+    # --- 2. Statistical Masking (Cleaning Spikes) ---
     clean_masks = []
-    for sig in raw_signals:
+    for sig in sigs_raw:
         median = np.median(sig)
         std = np.std(sig)
         clean_masks.append(np.abs(sig - median) < (sigma_threshold * std))
     
-    # Combined mask: point is good only if all 3 axes are within threshold
     final_mask = clean_masks[0] & clean_masks[1] & clean_masks[2]
     
     t_masked = t_raw[final_mask]
     
-    # 3. Regularization (Linear Interpolation for FFT/Integration)
-    # This creates a perfectly even 200Hz clock
+    # --- 3. Regularization (Interpolation) ---
+    # Create a perfectly even clock based on the cleaned data range
     t_regular = np.linspace(t_masked.min(), t_masked.max(), len(t_masked))
     clean_signals = []
     
     for i in range(3):
-        sig_masked = raw_signals[i][final_mask]
-        f_interp = interp1d(t_masked, sig_masked, kind='linear')
+        sig_masked = sigs_raw[i][final_mask]
+        f_interp = interp1d(t_masked, sig_masked, kind='linear', fill_value="extrapolate")
         clean_signals.append(f_interp(t_regular))
 
-    return t_raw, raw_signals, t_regular, clean_signals
+    return t_raw, sigs_raw, t_regular, clean_signals
 
 # --- Execution ---
-file_path = "/home/marco/Desktop/Uni_anno3/TD/Es_10/TestBusI2C/DATA000_f1_780.bin"
-t_raw, s_raw, t_clean, s_clean = process_and_clean_data(file_path)
+file_path = "/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/DATA001_f0_300.bin"
+output = process_and_clean_data(file_path)
 
-# --- Comparison Plotting ---
-fig, axs = plt.subplots(3, 1, figsize=(12, 10), sharex=True)
-labels = ['X-Axis', 'Y-Axis', 'Z-Axis']
-colors = ['red', 'green', 'blue']
+if output:
+    t_raw, s_raw, t_clean, s_clean = output
 
-for i in range(3):
-    # Plot original data with spikes in light color
-    axs[i].scatter(t_raw, s_raw[i], marker='.', s=0.5, color='black', alpha=0.3, label='Raw (with Spikes)')
-    # Plot cleaned/interpolated data in bold color
-    axs[i].scatter(t_clean, s_clean[i], marker='.', s=0.5, color=colors[i], label='Cleaned & Regularized', linewidth=1)
+    # --- Comparison Plotting ---
+    fig, axs = plt.subplots(3, 1, figsize=(12, 10), sharex=True)
+    labels = ['X-Axis', 'Y-Axis', 'Z-Axis']
+    colors = ['red', 'green', 'blue']
 
-    axs[i].set_ylabel(f"{labels[i]}\nRaw Value")
-    axs[i].legend(loc='upper right', fontsize='small')
-    axs[i].grid(True, which='both', linestyle='--', alpha=0.5)
+    for i in range(3):
+        # Scatter for raw to see spikes clearly
+        axs[i].scatter(t_raw, s_raw[i], s=1, color='black', alpha=0.2, label='Raw')
+        # Line for cleaned data
+        axs[i].plot(t_clean, s_clean[i], color=colors[i], label='Cleaned', linewidth=1)
 
-plt.xlabel("Time (seconds)")
-plt.suptitle("MPU-6050 Data Cleaning: Impact Removal for FFT and Integration")
-plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-plt.show()
+        axs[i].set_ylabel(f"{labels[i]}\nRaw Value")
+        axs[i].legend(loc='upper right', fontsize='small')
+        axs[i].grid(True, alpha=0.3)
+
+    plt.xlabel("Time (seconds)")
+    plt.suptitle("MPU-6050 Cleaned Data: No More Squeeze")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    
+    print(f"Time Range: Min={t_raw.min():.2f}s, Max={t_raw.max():.2f}s, Duration={t_raw.max()-t_raw.min():.2f}s")
+    plt.show()

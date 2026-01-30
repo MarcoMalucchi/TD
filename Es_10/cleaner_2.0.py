@@ -84,7 +84,7 @@ def find_longest_segment(mask):
 
 # --- Execution ---
 # Replace with your actual path
-file_path = "/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/DATA012_f0_300.bin"
+file_path = "/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/DATA000_f0_300.bin"
 processed = process_clean_advanced(file_path)
 
 if processed:
