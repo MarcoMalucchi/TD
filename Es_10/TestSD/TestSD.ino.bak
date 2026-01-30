@@ -1,0 +1,380 @@
+#include <SPI.h>
+#include <SD.h>
+
+const int chipSelect = 10; // Cambia in base al tuo modulo SD
+const uint32_t BUFFER_SIZE = 1024; // Il tuo buffer (multiplo di 512)
+uint8_t dummyBuffer[BUFFER_SIZE];
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial);
+
+  // Riempio il buffer con dati di test
+  for (uint32_t i = 0; i < BUFFER_SIZE; i++) dummyBuffer[i] = (uint8_t)i;
+
+  Serial.print("Inizializzazione SD... ");
+  if (!SD.begin(chipSelect)) {
+    Serial.println("Fallita!");
+    return;
+  }
+  Serial.println("OK.");
+
+  File dataFile = SD.open("test.bin", FILE_WRITE);
+  if (!dataFile) {
+    Serial.println("Errore apertura file!");
+    return;
+  }
+
+  Serial.println("Inizio test di scrittura (100 blocchi da 1024 byte)...");
+  
+  uint32_t maxLatency = 0;
+  uint32_t totalTime = 0;
+  uint32_t startTest = millis();
+
+  for (int i = 0; i < 100; i++) {
+    uint32_t t0 = micros();
+    
+    dataFile.write(dummyBuffer, BUFFER_SIZE);
+    // dataFile.flush(); // Decommenta se vuoi testare la velocità "sicura" (più lenta)
+
+    uint32_t t1 = micros();
+    uint32_t latency = t1 - t0;
+    
+    if (latency > maxLatency) maxLatency = latency;
+    totalTime += latency;
+
+    if (i % 10 == 0) Serial.print(".");
+  }
+
+  uint32_t endTest = millis();
+  dataFile.close();
+
+  Serial.println("\n--- Risultati SD ---");
+  Serial.print("Tempo totale: "); Serial.print(endTest - startTest); Serial.println(" ms");
+  Serial.print("Latenza media per blocco: "); Serial.print((totalTime / 100)); Serial.println(" us");
+  Serial.print("Latenza MASSIMA: "); Serial.print(maxLatency); Serial.println(" us");
+  
+  if (maxLatency > 400000) { // 400ms
+    Serial.println("ATTENZIONE: Latenza troppo alta! Rischio overflow FIFO.");
+  } else {
+    Serial.println("STATO: SD compatibile con campionamento a 200Hz.");
+  }
+}
+
+void loop() {}
+
+
+
+
+
+
+
+
+#include "SdFat.h"
+
+// Configurazione SD
+#define SD_CS_PIN 10
+SdFat sd;
+SdFile file;
+
+// Buffer di test (il tuo blocco da 1024 byte)
+const uint32_t BUFFER_SIZE = 1024;
+uint8_t dummyBuffer[BUFFER_SIZE];
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial);
+
+  // Riempio il buffer con dati finti
+  for (uint32_t i = 0; i < BUFFER_SIZE; i++) dummyBuffer[i] = (uint8_t)i;
+
+  // Inizializzazione SdFat (SPI a 24MHz o superiore per R4)
+  if (!sd.begin(SD_CS_PIN, SD_SCK_MHZ(24))) {
+    Serial.println("Errore inizializzazione SD!");
+    return;
+  }
+
+  // Uso un file binario per la massima velocità
+  if (!file.open("test_sdf.bin", O_RDWR | O_CREAT | O_TRUNC)) {
+    Serial.println("Errore apertura file!");
+    return;
+  }
+
+  Serial.println("Inizio stress test SdFat (200 blocchi da 1024 byte)...");
+
+  uint32_t maxLat = 0;
+  uint32_t minLat = 999999;
+  uint32_t totalTime = 0;
+
+  for (int i = 0; i < 200; i++) {
+    uint32_t t0 = micros();
+    
+    // Scrittura del blocco
+    size_t written = file.write(dummyBuffer, BUFFER_SIZE);
+    
+    // NOTA: In produzione, chiama file.sync() ogni X blocchi 
+    // per non rallentare troppo il loop.
+    // file.sync(); 
+
+    uint32_t t1 = micros();
+    uint32_t lat = t1 - t0;
+
+    if (written != BUFFER_SIZE) Serial.println("Errore scrittura parziale!");
+    if (lat > maxLat) maxLat = lat;
+    if (lat < minLat) minLat = lat;
+    totalTime += lat;
+
+    if (i % 20 == 0) Serial.print(".");
+  }
+
+  file.close();
+
+  Serial.println("\n--- Risultati SdFat ---");
+  Serial.print("Latenza Media: "); Serial.print(totalTime / 200); Serial.println(" us");
+  Serial.print("Latenza MINIMA: "); Serial.print(minLat); Serial.println(" us");
+  Serial.print("Latenza MASSIMA: "); Serial.print(maxLat); Serial.println(" us");
+  
+  // Calcolo throughput
+  float mbps = (200.0 * BUFFER_SIZE) / totalTime; // byte/us = MB/s
+  Serial.print("Velocità stimata: "); Serial.print(mbps); Serial.println(" MB/s");
+}
+
+void loop() {}
+
+
+
+
+#include "SdFat.h"
+
+SdFat sd;
+SdFile file;
+
+// Esempio: pre-allochiamo 50 MB (circa 1 ora a 200Hz con i tuoi dati)
+const uint32_t LOG_SIZE = 50 * 1024 * 1024; 
+
+void setupLogger() {
+  if (!sd.begin(10, SD_SCK_MHZ(24))) return;
+
+  // 1. Apri il file in modalità scrittura
+  if (!file.open("data.bin", O_RDWR | O_CREAT | O_TRUNC)) {
+    Serial.println("Errore apertura!");
+    return;
+  }
+
+  // 2. Tenta la pre-allocazione
+  // Questo crea fisicamente lo spazio sulla SD senza scriverci nulla
+  if (!file.preAllocate(LOG_SIZE)) {
+    Serial.println("Pre-allocazione fallita! SD piena o frammentata.");
+    file.close();
+    return;
+  }
+
+  Serial.println("Spazio allocato con successo. Logger pronto.");
+}
+
+
+
+#include "SdFat.h"
+
+// Configurazione SD e File
+#define SD_CS_PIN 10
+#define LOG_SIZE 10 * 1024 * 1024 // Pre-allochiamo 10 MB per il test
+#define BUFFER_SIZE 1024          // 128 campioni * 8 byte (6 dati + 2 timestamp approx)
+
+SdFat sd;
+SdFile file;
+
+uint8_t dummyBuffer[BUFFER_SIZE];
+uint32_t writeCount = 0;
+const uint32_t TOTAL_BLOCKS = 1000; // Scriveremo circa 1MB di dati
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial);
+
+  Serial.println(F("--- SD STRESS TEST (SdFat + PreAllocate) ---"));
+
+  // 1. Inizializzazione SD (24MHz è ottimo per R4)
+  if (!sd.begin(SD_CS_PIN, SD_SCK_MHZ(24))) {
+    Serial.println(F("Errore: SD non inizializzata!"));
+    return;
+  }
+
+  // 2. Creazione e apertura file
+  if (!file.open("stress.bin", O_RDWR | O_CREAT | O_TRUNC)) {
+    Serial.println(F("Errore: Apertura file fallita!"));
+    return;
+  }
+
+  // 3. PRE-ALLOCAZIONE
+  Serial.print(F("Allocazione di ")); Serial.print(LOG_SIZE / 1024); Serial.println(F(" KB..."));
+  if (!file.preAllocate(LOG_SIZE)) {
+    Serial.println(F("Errore: Pre-allocazione fallita! SD frammentata o piena."));
+    file.close();
+    return;
+  }
+  Serial.println(F("Spazio riservato correttamente."));
+
+  // Riempio il buffer con dati finti
+  for (int i = 0; i < BUFFER_SIZE; i++) dummyBuffer[i] = i % 256;
+
+  // 4. LOOP DI SCRITTURA (Simula il logging)
+  uint32_t maxLat = 0;
+  uint32_t startTest = millis();
+
+  Serial.println(F("Scrittura in corso..."));
+  for (uint32_t b = 0; b < TOTAL_BLOCKS; b++) {
+    uint32_t t0 = micros();
+    
+    size_t written = file.write(dummyBuffer, BUFFER_SIZE);
+    
+    uint32_t t1 = micros();
+    uint32_t lat = t1 - t0;
+
+    if (lat > maxLat) maxLat = lat;
+    if (written != BUFFER_SIZE) Serial.println(F("Errore di scrittura!"));
+    
+    if (b % 100 == 0) Serial.print("."); 
+  }
+
+  // 5. TRUNCATE E CHIUSURA
+  // Calcoliamo la posizione attuale per tagliare il file alla dimensione reale
+  uint32_t finalPos = file.curPosition();
+  
+  Serial.println(F("\nFase finale: Truncate e Close..."));
+  if (!file.truncate(finalPos)) {
+    Serial.println(F("Errore: Truncate fallito!"));
+  }
+  
+  file.close();
+
+  // 6. RISULTATI
+  uint32_t totalTime = millis() - startTest;
+  Serial.println(F("--- RISULTATI FINALI ---"));
+  Serial.print(F("Tempo totale: ")); Serial.print(totalTime); Serial.println(F(" ms"));
+  Serial.print(F("Latenza MASSIMA: ")); Serial.print(maxLat); Serial.println(F(" us"));
+  Serial.print(F("Dimensione finale file: ")); Serial.print(finalPos); Serial.println(F(" byte"));
+
+  if (maxLat < 10000) {
+    Serial.println(F("STATO: ECCELLENTE. La pre-allocazione sta funzionando."));
+  } else if (maxLat < 100000) {
+    Serial.println(F("STATO: BUONO. Compatibile con 200Hz."));
+  } else {
+    Serial.println(F("STATO: RISCHIOSO. Latenza troppo alta per la FIFO dell'MPU."));
+  }
+}
+
+void loop() {}
+
+
+
+
+#include "SdFat.h"
+#include <Wire.h>
+
+// --- CONFIGURAZIONE ---
+#define MPU_ADDR 0x68
+#define ACC_PIN 2         // Pin interrupt su Arduino R4
+#define SD_CS_PIN 10
+#define LOG_SIZE 51200    // 50 KB pre-allocati
+#define BLOCK_LEN 128     // Campioni per blocco (128 * 6 byte = 768 byte)
+
+// --- STRUTTURE E BUFFER ---
+struct DataPacket {
+  uint8_t data[6];        // Accel X, Y, Z (High/Low)
+  uint32_t timeStamp;     // Timestamp in microsecondi
+};
+
+// Doppio buffer per i timestamp (gestito in ISR)
+volatile uint32_t tsBuffer[2][BLOCK_LEN];
+volatile uint8_t activeBuff = 0;
+volatile uint8_t count = 0;
+volatile bool fifoFlag = false;
+
+DataPacket sdBuffer[BLOCK_LEN]; // Buffer per scrittura SD (allineato)
+
+SdFat sd;
+SdFile file;
+
+// --- ISR (Interrupt Service Routine) ---
+void dataReadyAcc() {
+  tsBuffer[activeBuff][count] = micros();
+  count++;
+  if (count >= BLOCK_LEN) {
+    count = 0;
+    activeBuff ^= 1;
+    fifoFlag = true;
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin();
+  Wire.setClock(400000);
+
+  // 1. Inizializzazione SD e Pre-allocazione
+  if (!sd.begin(SD_CS_PIN, SD_SCK_MHZ(24))) {
+    Serial.println("SD Fallita");
+    while(1);
+  }
+  file.open("DATA.BIN", O_RDWR | O_CREAT | O_TRUNC);
+  file.preAllocate(LOG_SIZE);
+
+  // 2. Configurazione MPU-6050
+  writeReg(0x6B, 0x80); delay(100); // Reset
+  writeReg(0x6B, 0x00);             // Wake up
+  writeReg(0x19, 0x04);             // Sample Rate 200Hz (1kHz / (1+4))
+  writeReg(0x1A, 0x03);             // DLPF 44Hz
+  writeReg(0x37, 0x30);             // Latch interrupt, clear on read
+  writeReg(0x38, 0x01);             // Enable Data Ready Interrupt
+  writeReg(0x23, 0x08);             // Enable Accel FIFO
+  writeReg(0x6A, 0x44);             // FIFO Enable + Reset
+
+  // 3. Attivazione Interrupt Arduino
+  pinMode(ACC_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(ACC_PIN), dataReadyAcc, RISING);
+  
+  Serial.println("Logging avviato...");
+}
+
+void loop() {
+  if (fifoFlag) {
+    fifoFlag = false;
+    uint8_t procBuff = activeBuff ^ 1;
+
+    // Leggiamo i 768 byte dalla FIFO
+    // Usiamo Wire.requestFrom a blocchi per efficienza
+    for (int i = 0; i < BLOCK_LEN; i++) {
+      Wire.beginTransmission(MPU_ADDR);
+      Wire.write(0x74);
+      Wire.endTransmission(false);
+      Wire.requestFrom(MPU_ADDR, 6);
+      
+      for (int j = 0; j < 6; j++) sdBuffer[i].data[j] = Wire.read();
+      sdBuffer[i].timeStamp = tsBuffer[procBuff][i];
+    }
+
+    // Scrittura su SD
+    file.write((const uint8_t*)sdBuffer, sizeof(sdBuffer));
+
+    // Controllo stop (se superiamo i 50KB o comando esterno)
+    if (file.curPosition() >= LOG_SIZE) {
+      stopLogging();
+    }
+  }
+}
+
+void stopLogging() {
+  detachInterrupt(digitalPinToInterrupt(ACC_PIN));
+  file.truncate(file.curPosition());
+  file.close();
+  Serial.println("Log terminato e salvato.");
+  while(1);
+}
+
+void writeReg(uint8_t reg, uint8_t val) {
+  Wire.beginTransmission(MPU_ADDR);
+  Wire.write(reg);
+  Wire.write(val);
+  Wire.endTransmission();
+}
