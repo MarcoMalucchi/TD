@@ -44,7 +44,7 @@ def read_synchronized_log(filename):
     return np.array(results)
 
 # --- Execution and Plotting ---
-file_path = "/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/DATA007_f0_300.bin"
+file_path = "/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/test/S01DATA0000_Hz00_000.bin"
 data = read_synchronized_log(file_path)
 
 if len(data) > 0:
