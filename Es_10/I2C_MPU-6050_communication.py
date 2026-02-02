@@ -54,12 +54,13 @@ sht = tdwf.I2Cdevice(ad2.hdwf,SAD)
 #####################
 
 #=========================
-# CONFIGURAZIONE MPU-6050.
+# MPU-6050 CONFIGURATION.
 #=========================
 
 sht.write([PWR_MGMT1, 0x80])  # reset del sensore, faccio passare un po' di tempo perchè si riavvii nel modo corretto
-time.sleep(1)
-sht.write([PWR_MGMT1, 0x00])  # sveglia il sensore e seleziona clock, abilita sesore di temperatura
+time.sleep(0.7)
+sht.write([PWR_MGMT1, 0x01])  # sveglia il sensore e seleziona clock, abilita sesore di temperatura
+print("Sensor restarted")
 time.sleep(0.5)
 sht.write([PWR_MNGMT2, 0x00])   # abilita accelerometro e giroscopio
 time.sleep(0.1)
@@ -67,51 +68,84 @@ sht.write([CONFIG, 0x03])       # filtro digitale
 time.sleep(0.1)
 sht.write([SMPLRT_DIV, 0x04])   # sample rate = Gyro output rate / (1 + SMPLRT_DIV)
 time.sleep(0.1)
-sht.write([GYRO_CONFIG, 0x08])  # full scale = +/- 2000 deg/s   SENTIVITY SCALE FACTIO = 65.5 LSB/deg/s
+sht.write([GYRO_CONFIG, 0x08])  # full scale = +/- 500 deg/s   SENTIVITY SCALE FACTIO = 65.5 LSB/deg/s
 time.sleep(0.1)
 sht.write([ACCEL_CONFIG, 0x00]) # full scale = +/- 2g   SENTIVITY SCALE FACTIO = 16384 LSB/g
 time.sleep(0.1)
 
+# def raw_dump():
+#     print("\n--- MPU-6050 FULL REGISTER DUMP ---")
+#     print("    0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F")
+#     for row in range(0, 0x76, 16):
+#         line_vals = []
+#         for col in range(16):
+#             reg = row + col
+#             if reg > 0x75: break
+#             sht.writeread([reg], 1)
+#             line_vals.append(f"{sht.vals[0]:02X}")
+#         print(f"{row:02X}: {' '.join(line_vals)}")
+#     print("------------------------------------\n")
+
+# # Call this right after "Sensor restarted"
+# raw_dump()
+
 ##########################
 
-###########################
-# FUNZIONI DI LETTURA DATI.
-###########################
+#=======================
+# MEASUREMENT FUNCTIONS.
+#=======================
 
-# --- LETTURA TEMPPERATURA ---
+# --- TEMPERATURE MEASURE ---
 def read_temp():
-    sht.writeread(TEMP_OUT_H,2)
-    T = (sht.vals[0] << 8) | sht.vals[1]
-    if T>=32767:    # Complemento a due
-        T-=65536
+    global start_time
+    sht.writeread(TEMP_OUT_H, 2)
+    raw_data = list(sht.vals)
+    current_time = time.time() - start_time
+    T = (int(raw_data[0]) << 8) | int(raw_data[1])
+    if T > 32767: # Complemento a due
+        T -= 65536
     T = T/340 + 36.53 # Conversione temperatura
-    return T # Returns temperature in Celsius
+    return T, current_time # Returns temperature in Celsius
 
-# --- LETTURA ACCELERAZIONE ---
+# --- ACCELERATION MEASURE ---
 def read_accel():
+    global start_time
     sht.writeread(ACCEL_XOUT_H,6)
+    #print(f"DEBUG: Rax vals {sht.vals}")
+    raw_data = list(sht.vals)
+    current_time = time.time() - start_time
     ACCEL = []
+    # Check the Z-axis bytes specifically (index 4 and 5)
+    # z_high = raw_data[4]
+    # z_low = raw_data[5]
+    # z_combined = (z_high << 8) | z_low
+    # print(f"DEBUG Z-AXIS: High={hex(z_high)}, Low={hex(z_low)}, Combined={z_combined}")
 
     for i in range(0, 6, 2):    #l'indice itera di 2 in 2, quindi salta i numeri dispari
-        value = (sht.vals[i] << 8) | sht.vals[i+1]
-        if value >= 0x8000:  # Complemento a due
-            value -= 0x10000
+        value = (int(raw_data[i]) << 8) | int(raw_data[i+1])
+        if value > 32767: # Complemento a due
+            value -= 65536
         ACCEL.append(value / 16384.0)  # Scale factor for +/- 2g (to change it go to ACCEL_CONFIG register)
-    
-    return ACCEL  # Returns [ACCEL_X, ACCEL_Y, ACCEL_Z] acceleration vector in g
 
-# --- LETTURA GIROSCOPIO ---
+    #print(f"DEBUG: Cleaned value {ACCEL}")
+    
+    return ACCEL, current_time  # Returns [ACCEL_X, ACCEL_Y, ACCEL_Z] acceleration vector in g and current_time
+
+# --- GYROSCOPE MEASURE ---
 def read_gyro():
+    global start_time
     sht.writeread(GYRO_XOUT_H,6)
+    raw_data = list(sht.vals)
+    current_time = time.time()-start_time
     GYRO = []
 
     for i in range(0, 6, 2):    #l'indice itera di 2 in 2, quindi salta i numeri dispari
-        value = (sht.vals[i] << 8) | sht.vals[i+1]
-        if value >= 0x8000:  # Complemento a due
-            value -= 0x10000
+        value = (int(raw_data[i]) << 8) | int(raw_data[i+1])
+        if value > 32767: # Complemento a due
+            value -= 65536
         GYRO.append(value / 65.5)  # Scale factor for +/- 2000 deg/s (to change it go to GYRO_CONFIG register)
 
-    return GYRO  # Returns [GYRO_X, GYRO_Y, GYRO_Z] angular velocity vector in deg/s
+    return GYRO, current_time  # Returns [GYRO_X, GYRO_Y, GYRO_Z] angular velocity vector in deg/s and current time
 
 ###########################
 
@@ -121,76 +155,113 @@ def read_gyro():
 
 # --- LIVE PLOT TEMPERATURA ---
 
-
-
-# --- LIVE PLOT ACCELERAZIONE ---
-
-
-
-# --- LIVE PLOT GIROSCOPIO ---
-
-########################
-
-    # -[Funzioni di gestione eventi]-----------------------------------------------
-
-    def on_close(event):
-        global flag_run
-        flag_run = False
-
-    def on_key(event):
-        global flag_run
-        if event.key == 'escape':  # termina programma
-            flag_run = False
-
-
-import tdwf
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt 
-import time
-
-# --- PLOT MANAGEMENT FUNCTIONS ---
-
-def setup_live_plot():
+def setup_live_plot_T():
     """Initializes the figure and returns the objects needed for updates."""
     fig, ax = plt.subplots(figsize=(12, 6))
-    plt.grid(True)
+    # Create an empty line object
+    line, = ax.plot([], [], ".-", color="tab:orange")
     plt.ylabel("Temperature [C]")
     plt.xlabel("Time [s]")
     plt.title("Press ESC to exit")
+    plt.grid(True)
     
-    # Create an empty line object
-    line, = ax.plot([], [], "o-", color="tab:orange") 
-    
+    fig.canvas.mpl_connect("close_event", on_close)
+    fig.canvas.mpl_connect("key_press_event", on_key)
+
     plt.tight_layout()
     plt.show(block=False)
     
     return fig, ax, line
 
-def update_live_plot(fig, ax, line, x_data, y_data):
+def update_live_plot_T(fig, ax, line, x_data, y_data):
     """Updates the data in the plot and refreshes the canvas."""
     line.set_data(x_data, y_data)
     ax.relim()           
     ax.autoscale_view() 
-    fig.canvas.draw()
+    fig.canvas.draw_idle()
     fig.canvas.flush_events()
 
-# --- HARDWARE SETUP ---
-# (Keeping your original MPU6050 and AD2 configuration)
-PWR_MGMT1 = 0x6B
-TEMP_OUT_H = [0x41]
-TEMP_OUT_L = [0x42]
-SAD = 0x68
+# --- LIVE PLOT ACCELERAZIONE ---
 
-ad2 = tdwf.AD2()
-ad2.vdd = 3.3
-ad2.power(True)
-i2c = tdwf.I2Cbus(ad2.hdwf)
-sht = tdwf.I2Cdevice(ad2.hdwf, SAD)
-sht.write([PWR_MGMT1, 0x00])  
+def setup_live_plot_A():
+    """Initializes the figure and returns the objects needed for updates."""
+    fig, ax = plt.subplots(3,1, figsize=(12, 6), sharex=True)
+    plt.subplots_adjust(hspace=0.4)
+    # Create an empty line object
+    line1, = ax[0].plot([], [], ".-", color="tab:blue", label="X axis")
+    line2, = ax[1].plot([], [], ".-", color="tab:green", label="Y axis")
+    line3, = ax[2].plot([],[], ".-", color="tab:red", label="Z axis")
+    for a, label in zip([ax[0], ax[1], ax[2]], ["X acceleration [g]", "Y acceleration [g]", "Z acceleration [g]"]):
+        a.set_ylabel(label)
+        a.grid(True)
+        a.set_ylim(-2, 2) # Fixed range prevents constant jumping
+        a.legend(loc="upper right")
+    plt.xlabel("Time [s]")
+    plt.title("Press ESC to exit")
+    plt.grid(True)
+    
+    fig.canvas.mpl_connect("close_event", on_close)
+    fig.canvas.mpl_connect("key_press_event", on_key)
 
-# --- EVENT HANDLERS ---
-flag_run = True
+    plt.tight_layout()
+    plt.show(block=False)
+    
+    return fig, ax, line1, line2, line3
+
+def update_live_plot_A(fig, ax, line1, line2, line3, x_data, y_Xdata, y_Ydata, y_Zdata):
+    """Updates the data in the plot and refreshes the canvas."""
+    line1.set_data(x_data, y_Xdata)
+    line2.set_data(x_data, y_Ydata)
+    line3.set_data(x_data, y_Zdata)
+    for a in ax:
+        a.relim()
+        a.autoscale_view()
+    fig.canvas.draw_idle()
+    fig.canvas.flush_events()
+
+# --- LIVE PLOT GIROSCOPIO ---
+
+def setup_live_plot_G():
+    """Initializes the figure and returns the objects needed for updates."""
+    fig, ax = plt.subplots(3,1, figsize=(12, 6), sharex=True)
+    plt.subplots_adjust(hspace=0.4)
+    # Create an empty line object
+    line1, = ax[0].plot([], [], ".-", color="tab:blue", label="X axis")
+    line2, = ax[1].plot([], [], ".-", color="tab:green", label="Y axis")
+    line3, = ax[2].plot([],[], ".-", color="tab:red", label="Z axis")
+    for a, label in zip([ax[0], ax[1], ax[2]], ["X Gyro [deg/s]", "Y Gyro [deg/s]", "Z Gyro [deg/s]"]):
+        a.set_ylabel(label)
+        a.grid(True)
+        a.set_ylim(-500, 500) # Fixed range prevents constant jumping
+        a.legend(loc="upper right")
+    plt.xlabel("Time [s]")
+    plt.title("Press ESC to exit")
+    plt.grid(True)
+    
+    fig.canvas.mpl_connect("close_event", on_close)
+    fig.canvas.mpl_connect("key_press_event", on_key)
+
+    plt.tight_layout()
+    plt.show(block=False)
+    
+    return fig, ax, line1, line2, line3
+
+def update_live_plot_G(fig, ax, line1, line2, line3, x_data, y_Xdata, y_Ydata, y_Zdata):
+    """Updates the data in the plot and refreshes the canvas."""
+    line1.set_data(x_data, y_Xdata)
+    line2.set_data(x_data, y_Ydata)
+    line3.set_data(x_data, y_Zdata)
+    for a in ax:
+        a.relim()
+        a.autoscale_view()
+    fig.canvas.draw_idle()
+    fig.canvas.flush_events()
+
+########################
+
+#=============================
+# FUNZIONI DI GESTIONE EVENTI.
+#=============================
 
 def on_close(event):
     global flag_run
@@ -198,195 +269,72 @@ def on_close(event):
 
 def on_key(event):
     global flag_run
-    if event.key == 'escape':
+    if event.key == 'escape':  # termina programma
         flag_run = False
 
-# --- MEASUREMENT CYCLE ---
+###############################
 
-# 1. Initialize Plot using our function
-fig, ax, hp1 = setup_live_plot()
-fig.canvas.mpl_connect("close_event", on_close)
-fig.canvas.mpl_connect("key_press_event", on_key)
+#=================
+# CICLO DI MISURA.
+#=================
 
-mytime = []
-TTv = []
 start_time = time.time()
 
 try:
-    while flag_run:
-        time.sleep(0.1)
-        
-        # Data Acquisition
-        sht.writeread(TEMP_OUT_H, 1)
-        TH = sht.vals[0]
-        sht.writeread(TEMP_OUT_L, 1)
-        TL = sht.vals[0]
+    while True:
 
-        # Temperature Conversion
-        TT = (TH << 8) + TL
-        if TT > 0x8000:
-            TT -= 0x10000
-        TT = TT/340 + 36.53
-        
-        # Update Data Lists
-        TTv.append(TT)
-        mytime.append(time.time() - start_time)
-        print(f"T = {TT:.2f}C")
+        mytime = []
+        TTv = []
+        ACCEL = []
+        GYRO = []
 
-        # 2. Call the Update function
-        update_live_plot(fig, ax, hp1, mytime, TTv)
+        flag_run = True
+        flag_first = True
 
+        choice = input("Select measurement type - Temperature (T), Acceleration (A), Gyroscope (G), or Quit (Q): ").strip().upper()
+
+        if choice == 'T':
+            fig, ax, hp1 = setup_live_plot_T()
+            while flag_run:
+                time.sleep(0.05)
+                new_T, new_t = read_temp()
+                mytime.append(new_t)
+                TTv.append(new_T)
+                update_live_plot_T(fig, ax, hp1, mytime[-100:], TTv[-100:])
+            plt.close(fig)
+        elif choice == 'A':
+            fig, ax, hp1, hp2, hp3 = setup_live_plot_A()
+            while flag_run:
+                time.sleep(0.05)
+                new_ACCEL, new_t = read_accel()
+                mytime.append(new_t)
+                ACCEL.append(new_ACCEL)
+                x_vals = [row[0] for row in ACCEL[-100:]]
+                y_vals = [row[1] for row in ACCEL[-100:]]
+                z_vals = [row[2] for row in ACCEL[-100:]]
+                update_live_plot_A(fig, ax, hp1, hp2, hp3, mytime[-100:], x_vals, y_vals, z_vals)  # Aggiorna il grafico con i dati di accelerazione
+            plt.close(fig)
+        elif choice == 'G':
+            fig, ax, hp1, hp2, hp3 = setup_live_plot_G()
+            while flag_run:
+                time.sleep(0.05)
+                new_GYRO, new_t = read_gyro()
+                mytime.append(new_t)
+                GYRO.append(new_GYRO)
+                x_vals = [row[0] for row in GYRO[-100:]]
+                y_vals = [row[1] for row in GYRO[-100:]]
+                z_vals = [row[2] for row in GYRO[-100:]]
+                update_live_plot_G(fig, ax, hp1, hp2, hp3, mytime[-100:], x_vals, y_vals, z_vals)
+            plt.close(fig)
+        elif choice == 'Q':
+            break
+        else:
+            print("Invalid choice. Please enter T, A, G, or Q.")
 finally:
     # Cleanup
-    plt.close(fig)
-    ad2.close()
-    print("Program terminated safely.")
-
-    # -[Ciclo di misura]-----------------------------------------------------------
-    #   1. Creazione figura e link agli eventi
-    # fig, ax = plt.subplots(figsize=(12,6))
-    # fig.canvas.mpl_connect("close_event", on_close)
-    # fig.canvas.mpl_connect("key_press_event", on_key)
-
-    #   2. Inizializzazione variabili - MISURA
-    # mytime = []
-    # TTv = []
-    # flag_first = True
-    # flag_run = True
-    # ACCEL_X = []
-    # ACCEL_Y = []
-    # ACCEL_Z = []
-
-    # start_time = time.time()
-
-    #   3. Ciclo di misura
-    # while flag_run:
-    #     time.sleep(0.1)
-
-    #     sht.writeread([WHO_AM_I], 1)
-    #     if sht.vals[0] != 0x68:
-    #         print(sht.vals[0])
-    #         print("ALARM: Communication lost! Check wires.")
-    #         continue # Skip this loop if sensor isn't responding
-
-    #   Misura accelerazione.
-
-        # sht.writeread(ACCEL_XOUT_H,6)
-        # ACCEL_X.append((sht.vals[0] << 8 | sht.vals[1])/16384)
-        # ACCEL_Y.append((sht.vals[2] << 8 | sht.vals[3])/16384)
-        # ACCEL_Z.append((sht.vals[4] << 8 | sht.vals[5])/16384)
-
-
-
-    #     sht.writeread(TEMP_OUT_H,2)
-    #     TH = sht.vals[0]
-    #     #sht.writeread(TEMP_OUT_L,1)
-    #     TL = sht.vals[1]
-
-
-
-    #     mytime.append(time.time()-start_time)
-    #     if flag_first:
-    #         flag_first = False
-    #         hp1, = plt.plot(mytime,TTv, "o", color="tab:orange")
-    #         plt.grid(True)
-    #         plt.ylabel("Temperature [C]")
-    #         plt.xlabel("Time [s]")
-    #         plt.title("Press ESC to exit")
-    #         plt.show(block=False)
-    #         plt.tight_layout()
-    #     else:
-    #         hp1.set_ydata(TTv)
-    #         hp1.set_xdata(mytime)
-    #         ax.relim()           
-    #         ax.autoscale_view() 
-    #         fig.canvas.draw()
-    #         fig.canvas.flush_events()
-    # # ---------------------------------------
-    # plt.close(fig)
-
-    # -[Plot Setup]----------------------------------------------
-    # Create a figure with 3 vertical subplots
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
-    plt.subplots_adjust(hspace=0.4)
-
-    def on_key(event):
-        global flag_run
-        if event.key == 'escape':
-            flag_run = False
-
-    fig.canvas.mpl_connect("key_press_event", on_key)
-
-    # Data containers
-    mytime, ACCEL_X, ACCEL_Y, ACCEL_Z = [], [], [], []
-    flag_run = True
-    start_time = time.time()
-
-    # Initial plot lines (placeholders)
-    lineX, = ax1.plot([], [], marker='o', linestyle='', color='tab:red', label='X-axis')
-    lineY, = ax2.plot([], [], marker='o', linestyle='', color='tab:green', label='Y-axis')
-    lineZ, = ax3.plot([], [], marker='o', linestyle='', color='tab:blue', label='Z-axis')
-
-    for ax, label in zip([ax1, ax2, ax3], ["X [g]", "Y [g]", "Z [g]"]):
-        ax.set_ylabel(label)
-        ax.grid(True)
-        ax.set_ylim(-2, 2) # Fixed range prevents constant jumping
-        ax.legend(loc="upper right")
-
-    ax3.set_xlabel("Time [s]")
-    ax1.set_title("Live Acceleration Data (Press ESC to stop) [g]")
-
-    plt.show(block=False)
-
-    # -[Ciclo di misura]------------------------------------------
-    while flag_run:
-        time.sleep(0.05) # Slightly faster sampling for acceleration
-        
-        # Read 6 bytes starting from ACCEL_XOUT_H (X_H, X_L, Y_H, Y_L, Z_H, Z_L)
-        sht.writeread(ACCEL_XOUT_H, 1)
-        ACCEL_X_H = sht.vals[0]
-        sht.writeread(ACCEL_XOUT_L, 1)
-        ACCEL_X_L = sht.vals[0]
-        sht.writeread(ACCEL_YOUT_H, 1)
-        ACCEL_Y_H = sht.vals[0]
-        sht.writeread(ACCEL_YOUT_L, 1)
-        ACCEL_Y_L = sht.vals[0]
-        sht.writeread(ACCEL_ZOUT_H, 1)
-        ACCEL_Z_H = sht.vals[0]
-        sht.writeread(ACCEL_ZOUT_L, 1)
-        ACCEL_Z_L = sht.vals[0]
-        
-        # Helper function for Two's Complement and conversion
-        def convert_accel(h, l):
-            val = (h << 8) | l
-            if val >= 0x8000:
-                val -= 0x10000
-            return val / 16384.0 # Scale factor for +/- 2g
-
-        current_t = time.time() - start_time
-        mytime.append(current_t)
-        ACCEL_X.append(convert_accel(ACCEL_X_H, ACCEL_X_L))
-        ACCEL_Y.append(convert_accel(ACCEL_Y_H, ACCEL_Y_L))
-        ACCEL_Z.append(convert_accel(ACCEL_Z_H, ACCEL_Z_L))
-
-        # Update plots
-        lineX.set_data(mytime, ACCEL_X)
-        lineY.set_data(mytime, ACCEL_Y)
-        lineZ.set_data(mytime, ACCEL_Z)
-
-        # Auto-scaling logic
-        for ax in [ax1, ax2, ax3]:
-            ax.relim()
-            ax.autoscale_view()
-
-        fig.canvas.draw()
-        fig.canvas.flush_events()
-
-
-
-    # This block executes even if you stop the kernel or an error occurs
     print("\nCleaning up hardware...")
     plt.close('all')
     ad2.power(False)
     ad2.close()
-    print("AD2 Power Off. Process safely terminated.")
+    print("AD2 Power Off. Program terminated safely.")
+    
