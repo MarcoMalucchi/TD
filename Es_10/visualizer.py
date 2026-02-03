@@ -103,6 +103,15 @@ for j in range(names.size):
         w_sfy, w_sPSDY = get_fft_welch_savgol(y)
         w_sfz, w_sPSDZ = get_fft_welch_savgol(z)
 
+        # --- SAVING ---
+        save = False  # Set to True to enable saving
+        if save:
+            header = "Freq_x, PSD_x, Freq_y, PSD_y, Freq_z, PSD_z"
+            output_data = np.column_stack((fx[1:], PSDX[1:], fy[1:], PSDY[1:], fz[1:], PSDZ[1:]))
+            output_filenames = path + "FFT/" + names[j].replace(".bin", "") + "_FFT.txt"
+            np.savetxt(output_filenames, output_data, delimiter=",", header=header, comments='')
+            print(f"FFT of: {names[j]} saved to: {output_filenames}")
+
         # --- Plotting ---
         for i in range(3):
     
