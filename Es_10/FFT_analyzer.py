@@ -1,10 +1,16 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
+
+#==========
+#AVERAGING.
+#==========
 
 # --- Configuration ---
 path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_alta_y/FFT/'
-save_results = False  # Toggle for saving
+save_results = True  # Toggle for saving
 
 # 1. Scan for the FFT files
 fft_files = sorted([f for f in os.listdir(path) if f.endswith('_FFT.txt')])
@@ -46,12 +52,10 @@ else:
     
     # Plot X-Axis using markers ('o') without a connecting line
     # markersize=2 keeps the plot from looking too crowded
-    plt.semilogy(fx, psd_x_avg, marker='o', linestyle='-', color='blue', 
-                 markersize=2, alpha=0.7, label='Avg PSD X')
+    plt.semilogy(fx, psd_x_avg, marker='o', linestyle='-', color='blue', markersize=2, alpha=0.7, label='Avg PSD X')
     
     # Plot Y-Axis using markers ('o') without a connecting line
-    plt.semilogy(fy, psd_y_avg, marker='o', linestyle='-', color='green', 
-                 markersize=2, alpha=0.7, label='Avg PSD Y')
+    plt.semilogy(fy, psd_y_avg, marker='o', linestyle='-', color='green', markersize=2, alpha=0.7, label='Avg PSD Y')
 
     # Formatting the plot
     plt.xlabel(r"Frequency [Hz]")
@@ -74,3 +78,98 @@ else:
         
         np.savetxt(output_path, output_data, delimiter=",", header=header, comments='')
         print(f"Results saved to: {output_path}")
+
+
+#=========================
+# MULTIPLE LORENTZIAN FIT.
+#=========================
+
+# --- 1. Define the Lorentzian Functions ---
+def single_lorentzian(f, f0, A, gamma):
+    return A / (1 + ((f - f0) / gamma)**2)
+
+def multi_lorentzian(f, *params):
+    """Sum of N Lorentzians based on the number of parameters provided"""
+    result = np.zeros_like(f)
+    # Each Lorentzian has 3 params: f0, A, gamma
+    for i in range(0, len(params), 3):
+        f0, A, gamma = params[i:i+3]
+        result += single_lorentzian(f, f0, A, gamma)
+    return result
+
+# --- 2. Load and MASK the Data ---
+data = np.loadtxt(os.path.join(path, "AVERAGED_XY_RESONANCE.csv"), delimiter=",", skiprows=1)
+
+# Create a mask for frequencies between 0.5 and 20 Hz
+# (Starting at 0.5 Hz avoids the DC/Low-freq artifacts)
+mask = (data[:, 0] >= 0.5) & (data[:, 0] <= 20)
+
+f_data = data[mask, 0]
+psd_data = data[mask, 1]   # Change to 1 for X, 3 for Y
+sigma_data = data[mask, 2] # Change to 2 for X, 4 for Y
+
+# --- 3. Peak Finding (now only looks in the 0.5-20Hz range) ---
+threshold = 5e-3
+peaks, _ = find_peaks(psd_data, height=threshold, distance=10)
+# Build initial guesses [f0, A, gamma] for each peak found
+initial_guesses = []
+for p in peaks:
+    f0_guess = f_data[p]
+    A_guess = psd_data[p]
+    gamma_guess = 0.5 # Starting guess for width in Hz
+    initial_guesses.extend([f0_guess, A_guess, gamma_guess])
+
+# --- 4. Perform the Fit with Optimization ---
+if len(initial_guesses) > 0:
+    # Build Bounds for N peaks: [f0_min, A_min, gamma_min], [f0_max, A_max, gamma_max]
+    lower_bounds = []
+    upper_bounds = []
+    for p in peaks:
+        f0 = f_data[p]
+        lower_bounds.extend([min(0.0, f0 - 2), 0, 0.001])  # f0 +/- 2Hz, PSD > 0, Width > 0.001
+        upper_bounds.extend([min(20, f0 + 2), 1.5, 5.0])   # f0 +/- 2Hz, PSD Max 1, Width Max 5Hz
+    
+    try:
+        # absolute_sigma=True treats sigma_data as the actual uncertainty of the points
+        popt, pcov = curve_fit(
+            multi_lorentzian, f_data, psd_data, 
+            p0=initial_guesses, 
+            sigma=sigma_data, 
+            absolute_sigma=True, 
+            bounds=(lower_bounds, upper_bounds),
+            maxfev=20000 
+        )
+        
+        fit_curve = multi_lorentzian(f_data, *popt)
+        
+        # Calculate one-standard-deviation errors from the covariance matrix
+        perr = np.sqrt(np.diag(pcov))
+        
+        print(f"Successfully fitted {len(peaks)} peaks.")
+        for i in range(0, len(popt), 3):
+            f0, A, gamma = popt[i:i+3]
+            f0_err = perr[i]
+            # Damping ratio zeta = gamma / f0
+            zeta = gamma / f0
+            print(f"Peak {i//3 + 1}: f0 = {f0:.3f} ± {f0_err:.3f} Hz, Zeta = {zeta:.4f}")
+
+    except RuntimeError as e:
+        print(f"Fit failed to converge: {e}")
+        fit_curve = None
+else:
+    print("No peaks found above the threshold!")
+    fit_curve = None
+
+# --- 5. Plot the Result ---
+plt.figure(figsize=(12, 7))
+plt.semilogy(f_data, psd_data, 'o', markersize=2, color='green', alpha=0.3, label='Data')
+if fit_curve is not None:
+    plt.semilogy(f_data, fit_curve, color='red', linewidth=2, label='Multi-Lorentzian Fit')
+    # Mark the identified peaks
+    plt.semilogy(f_data[peaks], psd_data[peaks], "x", color='black', label='Fitted Peaks')
+
+plt.axhline(y=threshold, color='black', linestyle='--', alpha=0.5, label='Threshold')
+plt.xlabel("Frequency [Hz]")
+plt.ylabel("PSD")
+plt.legend()
+plt.show()
