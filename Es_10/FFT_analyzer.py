@@ -9,7 +9,7 @@ from scipy.signal import find_peaks
 #==========
 
 # --- Configuration ---
-path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_alta_y/FFT/'
+path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_alta_ruotato/FFT/'
 save_results = True  # Toggle for saving
 
 # 1. Scan for the FFT files
@@ -105,8 +105,8 @@ data = np.loadtxt(os.path.join(path, "AVERAGED_XY_RESONANCE.csv"), delimiter=","
 mask = (data[:, 0] >= 0.5) & (data[:, 0] <= 20)
 
 f_data = data[mask, 0]
-psd_data = data[mask, 1]   # Change to 1 for X, 3 for Y
-sigma_data = data[mask, 2] # Change to 2 for X, 4 for Y
+psd_data = data[mask, 3]   # Change to 1 for X, 3 for Y
+sigma_data = data[mask, 4] # Change to 2 for X, 4 for Y
 
 # --- 3. Peak Finding (now only looks in the 0.5-20Hz range) ---
 threshold = 5e-3
@@ -116,29 +116,52 @@ initial_guesses = []
 for p in peaks:
     f0_guess = f_data[p]
     A_guess = psd_data[p]
-    gamma_guess = 0.5 # Starting guess for width in Hz
+    gamma_guess = 0.02*f0_guess #based on the hypothesis that we know the damping ratio, here assumed to be of 2%
+    print(f"f0_guess:", f0_guess, "A_guess:", A_guess, "gamma_guess:", gamma_guess)
+    #gamma_guess = 0.5 # Starting guess for width in Hz
     initial_guesses.extend([f0_guess, A_guess, gamma_guess])
 
 # --- 4. Perform the Fit with Optimization ---
 if len(initial_guesses) > 0:
-    # Build Bounds for N peaks: [f0_min, A_min, gamma_min], [f0_max, A_max, gamma_max]
     lower_bounds = []
     upper_bounds = []
-    for p in peaks:
-        f0 = f_data[p]
-        lower_bounds.extend([min(0.0, f0 - 2), 0, 0.001])  # f0 +/- 2Hz, PSD > 0, Width > 0.001
-        upper_bounds.extend([min(20, f0 + 2), 1.5, 5.0])   # f0 +/- 2Hz, PSD Max 1, Width Max 5Hz
+    
+    # We must iterate through the guesses we just made to ensure 
+    # the boundaries match the parameters 1:1
+    for i in range(len(peaks)):
+        f0_guess = initial_guesses[i*3]
+        A_guess = initial_guesses[i*3 + 1]
+        g_guess = initial_guesses[i*3 + 2]
+
+        # 1. Frequency Bounds: Keep the peak within 0.5Hz of where find_peaks saw it
+        f_min = f0_guess - 0.5
+        f_max = f0_guess + 0.5
+        
+        # 2. Amplitude Bounds: Must be positive, max 3x the detected height
+        a_min = A_guess * 0.2  # Allow it to shrink if peaks overlap
+        a_max = A_guess * 3.0
+        
+        # 3. Gamma (Width) Bounds: 
+        # Crucial: HWHM must be > 0. A 5Hz width is very broad for structural resonance.
+        g_min = 0.001 
+        g_max = 5.0
+
+        # Append to the global bounds lists
+        lower_bounds.extend([f_min, a_min, g_min])
+        upper_bounds.extend([f_max, a_max, g_max])
     
     try:
-        # absolute_sigma=True treats sigma_data as the actual uncertainty of the points
+        # Convert lists to tuples as required by scipy
         popt, pcov = curve_fit(
             multi_lorentzian, f_data, psd_data, 
             p0=initial_guesses, 
             sigma=sigma_data, 
             absolute_sigma=True, 
             bounds=(lower_bounds, upper_bounds),
-            maxfev=20000 
+            maxfev=50000 
         )
+        
+        # ... rest of the plotting code ...
         
         fit_curve = multi_lorentzian(f_data, *popt)
         

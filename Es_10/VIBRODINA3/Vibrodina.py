@@ -11,11 +11,11 @@ PORT = '/dev/ttyACM0'
 BAUD = 115200       #eventualmente raddoppiabile a 230400
 PARAMETERS = ["+0.01"]     # incremento in frequenza (positivo o negativo) o frequenze (freq max 11.5Hz, freq min 0.3Hz)
 INIT = 1.75      # frequenza iniziale in Hz (parte proprio da qui)
-REPEAT_N = 1    # numero di passi in freq, ignorato assieme a  INIT se si specificano le frrequenze in PARAMETERS,
+REPEAT_N = 5    # numero di passi in freq, ignorato assieme a  INIT se si specificano le frrequenze in PARAMETERS,
                 # oppure numero di acquisizioni in modalità manuale (OPERATING_MODE = 0)
 LOG_DURATION = 30  # durata acquisizione in secondi
 OPERATING_MODE = 0  # 0 = manuale, 1 = automatica (usa PARAMETERS e REPEAT_N)
-BASE_PATH = os.path.expanduser("/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/test/")
+BASE_PATH = os.path.expanduser("/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_bassa_y/")
 # =========================
 
 # Variabili di Stato Globali
