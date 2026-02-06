@@ -92,7 +92,7 @@ for current_name in names:
         w_sfz, w_sPSDZ = get_fft_welch_savgol(z)
 
         # --- SAVING ---
-        save = True  
+        save = False  
         if save:
             header = "Freq_x, PSD_x, Freq_y, PSD_y, Freq_z, PSD_z"
             output_data = np.column_stack((fx[1:], PSDX[1:], fy[1:], PSDY[1:], fz[1:], PSDZ[1:]))

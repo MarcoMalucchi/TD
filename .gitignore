@@ -8,7 +8,6 @@
 *.out
 
 # Data files (The "Garbage" files)
-*.bin
 PENDOLO/**/*.bin
 
 # Large PDFs (Adding these will stop them from being updated/uploaded)

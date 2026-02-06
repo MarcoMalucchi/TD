@@ -9,7 +9,7 @@ from scipy.signal import find_peaks
 #==========
 
 # --- Configuration ---
-path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_alta_ruotato/FFT/'
+path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_alta_x/FFT/'
 save_results = True  # Toggle for saving
 
 # 1. Scan for the FFT files
@@ -105,8 +105,8 @@ data = np.loadtxt(os.path.join(path, "AVERAGED_XY_RESONANCE.csv"), delimiter=","
 mask = (data[:, 0] >= 0.5) & (data[:, 0] <= 20)
 
 f_data = data[mask, 0]
-psd_data = data[mask, 3]   # Change to 1 for X, 3 for Y
-sigma_data = data[mask, 4] # Change to 2 for X, 4 for Y
+psd_data = data[mask, 1]   # Change to 1 for X, 3 for Y
+sigma_data = data[mask, 2] # Change to 2 for X, 4 for Y
 
 # --- 3. Peak Finding (now only looks in the 0.5-20Hz range) ---
 threshold = 5e-3
