@@ -59,7 +59,7 @@ def get_fft_welch_savgol(data, fs=200):
     return f, wPsd_smooth
 
 # --- AUTOMATED FILE SELECTION ---
-path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_bassa_y/'
+path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_0_88/'
 
 # Check if the FFT folder exists, if not, create it
 if not os.path.exists(path + "FFT/"):
@@ -76,12 +76,11 @@ for current_name in names:
     data = read_synchronized_log(file_path)
 
     if len(data) > 1:
-        data = data[data[:, 0].argsort()]
         
-        t = data[1:, 0]
+        t = data[:-1, 0]
         # Divide by sensitivity to get 'g' units
-        x, y, z = data[1:, 1]/16384.0, data[1:, 2]/16384.0, data[1:, 3]/16384.0
-        t = t - t[0]
+        x, y, z = data[:-1, 1]/16384.0, data[:-1, 2]/16384.0, data[:-1, 3]/16384.0
+        t = t - data[-1, 0]
 
         fx, XF, PSDX = get_fft(t, x)
         fy, YF, PSDY = get_fft(t, y)

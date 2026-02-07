@@ -1,0 +1,48 @@
+RIEPILOGO SESSIONE S04
+Data: 07/02/2026 21:45:19
+Modalità: Automatica
+------------------------------------------------------------
+NOME FILE                           | PARAMETRO (Hz) 
+------------------------------------------------------------
+S04DATA0000_Hz11_600.bin            | 11.600         
+S04DATA0001_Hz11_700.bin            | 11.700         
+S04DATA0002_Hz11_800.bin            | 11.800         
+S04DATA0003_Hz11_900.bin            | 11.900         
+S04DATA0004_Hz12_000.bin            | 12.000         
+S04DATA0005_Hz12_100.bin            | 12.100         
+S04DATA0006_Hz12_200.bin            | 12.200         
+S04DATA0007_Hz12_300.bin            | 12.300         
+S04DATA0008_Hz12_400.bin            | 12.400         
+S04DATA0009_Hz12_500.bin            | 12.500         
+S04DATA0010_Hz12_600.bin            | 12.600         
+S04DATA0011_Hz12_700.bin            | 12.700         
+S04DATA0012_Hz12_800.bin            | 12.800         
+S04DATA0013_Hz12_900.bin            | 12.900         
+S04DATA0014_Hz13_000.bin            | 13.000         
+S04DATA0015_Hz13_100.bin            | 13.100         
+S04DATA0016_Hz13_200.bin            | 13.200         
+S04DATA0017_Hz13_300.bin            | 13.300         
+S04DATA0018_Hz13_400.bin            | 13.400         
+S04DATA0019_Hz13_500.bin            | 13.500         
+S04DATA0020_Hz13_600.bin            | 13.600         
+S04DATA0021_Hz13_700.bin            | 13.700         
+S04DATA0022_Hz13_800.bin            | 13.800         
+S04DATA0023_Hz13_900.bin            | 13.900         
+S04DATA0024_Hz14_000.bin            | 14.000         
+S04DATA0025_Hz14_100.bin            | 14.100         
+S04DATA0026_Hz14_200.bin            | 14.200         
+S04DATA0027_Hz14_300.bin            | 14.300         
+S04DATA0028_Hz14_400.bin            | 14.400         
+S04DATA0029_Hz14_500.bin            | 14.500         
+S04DATA0030_Hz14_600.bin            | 14.600         
+S04DATA0031_Hz14_700.bin            | 14.700         
+S04DATA0032_Hz14_800.bin            | 14.800         
+S04DATA0033_Hz14_900.bin            | 14.900         
+S04DATA0034_Hz15_000.bin            | 15.000         
+S04DATA0035_Hz15_100.bin            | 15.100         
+S04DATA0036_Hz15_200.bin            | 15.200         
+S04DATA0037_Hz15_300.bin            | 15.300         
+S04DATA0038_Hz15_400.bin            | 15.400         
+S04DATA0039_Hz15_500.bin            | 15.500         
+S04DATA0040_Hz15_600.bin            | 15.600         
+S04DATA0041_Hz15_700.bin            | 15.700         

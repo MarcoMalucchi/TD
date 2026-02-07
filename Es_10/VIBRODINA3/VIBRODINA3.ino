@@ -7,8 +7,8 @@
 
 #define STEP_PIN 5   // Step Pin
 #define DIR_PIN 6    // Direzione rotazione
-#define ACC_PIN 3    // Interrupt accelerometro 
-#define SENSOR_PIN 2 // Sensore IR feedback
+#define ACC_PIN 2    // Interrupt accelerometro 
+#define SENSOR_PIN 3 // Sensore IR feedback
 #define ENABLE_PIN 4 // Attiva motore
 #define HOLES 10     // Fori disco controllo 
 #define STEPS_4_REV 400.0 // Passi per giro (modificabile con ponticelli on board)

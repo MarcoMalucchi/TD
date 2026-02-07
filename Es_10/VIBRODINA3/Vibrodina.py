@@ -9,13 +9,13 @@ from datetime import datetime
 # ==== CONFIGURAZIONE ====
 PORT = '/dev/ttyACM0'
 BAUD = 115200       #eventualmente raddoppiabile a 230400
-PARAMETERS = ["+0.01"]     # incremento in frequenza (positivo o negativo) o frequenze (freq max 11.5Hz, freq min 0.3Hz)
-INIT = 1.75      # frequenza iniziale in Hz (parte proprio da qui)
-REPEAT_N = 5    # numero di passi in freq, ignorato assieme a  INIT se si specificano le frrequenze in PARAMETERS,
+PARAMETERS = ["+0.1"]     # incremento in frequenza (positivo o negativo) o frequenze (freq max 11.5Hz, freq min 0.3Hz)
+INIT = 11.6      # frequenza iniziale in Hz (parte proprio da qui)
+REPEAT_N = 42    # numero di passi in freq, ignorato assieme a  INIT se si specificano le frrequenze in PARAMETERS,
                 # oppure numero di acquisizioni in modalità manuale (OPERATING_MODE = 0)
 LOG_DURATION = 30  # durata acquisizione in secondi
-OPERATING_MODE = 0  # 0 = manuale, 1 = automatica (usa PARAMETERS e REPEAT_N)
-BASE_PATH = os.path.expanduser("/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_bassa_y/")
+OPERATING_MODE = 1  # 0 = manuale, 1 = automatica (usa PARAMETERS e REPEAT_N)
+BASE_PATH = os.path.expanduser("/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_completa/")
 # =========================
 
 # Variabili di Stato Globali
@@ -140,7 +140,7 @@ def getNextFileName(frequenza_hz):
     numFile += 1
     return os.path.join(BASE_PATH, name)
 
-def GenerateRamp(Start, n, increment, down=0.3, up=11.5):
+def GenerateRamp(Start, n, increment, down=0.3, up=15.7):
     ramp = []
     for i in range(n + 1):
         val = Start + (i * increment)
@@ -205,7 +205,7 @@ def main():
 
             if OPERATING_MODE != 0:
                 send_command(ser, param)
-                time.sleep(5)
+                time.sleep(20)      # Attendi 10 secondi per stabilizzazione oscillazione sistema prima di iniziare misura
                 f_val = float(param)
                 wait_for_state("available")
             else:
