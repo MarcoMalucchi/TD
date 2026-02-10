@@ -1,0 +1,24 @@
+RIEPILOGO SESSIONE S06
+Data: 09/02/2026 12:06:04
+Modalità: Automatica
+------------------------------------------------------------
+NOME FILE                           | PARAMETRO (Hz) 
+------------------------------------------------------------
+S06DATA0000_Hz01_140.bin            | 1.140          
+S06DATA0001_Hz01_160.bin            | 1.160          
+S06DATA0002_Hz01_180.bin            | 1.180          
+S06DATA0003_Hz01_200.bin            | 1.200          
+S06DATA0004_Hz01_220.bin            | 1.220          
+S06DATA0005_Hz01_240.bin            | 1.240          
+S06DATA0006_Hz01_260.bin            | 1.260          
+S06DATA0007_Hz01_280.bin            | 1.280          
+S06DATA0008_Hz01_300.bin            | 1.300          
+S06DATA0009_Hz01_320.bin            | 1.320          
+S06DATA0010_Hz01_340.bin            | 1.340          
+S06DATA0011_Hz01_360.bin            | 1.360          
+S06DATA0012_Hz01_380.bin            | 1.380          
+S06DATA0013_Hz01_400.bin            | 1.400          
+S06DATA0014_Hz01_420.bin            | 1.420          
+S06DATA0015_Hz01_440.bin            | 1.440          
+S06DATA0016_Hz01_460.bin            | 1.460          
+S06DATA0017_Hz01_480.bin            | 1.480          

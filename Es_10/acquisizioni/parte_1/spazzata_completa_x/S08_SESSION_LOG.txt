@@ -1,0 +1,52 @@
+RIEPILOGO SESSIONE S08
+Data: 09/02/2026 15:28:53
+Modalità: Automatica
+------------------------------------------------------------
+NOME FILE                           | PARAMETRO (Hz) 
+------------------------------------------------------------
+S08DATA0000_Hz14_800.bin            | 14.800         
+S08DATA0001_Hz14_820.bin            | 14.820         
+S08DATA0002_Hz14_840.bin            | 14.840         
+S08DATA0003_Hz14_860.bin            | 14.860         
+S08DATA0004_Hz14_880.bin            | 14.880         
+S08DATA0005_Hz14_900.bin            | 14.900         
+S08DATA0006_Hz14_920.bin            | 14.920         
+S08DATA0007_Hz14_940.bin            | 14.940         
+S08DATA0008_Hz14_960.bin            | 14.960         
+S08DATA0009_Hz14_980.bin            | 14.980         
+S08DATA0010_Hz15_000.bin            | 15.000         
+S08DATA0011_Hz15_020.bin            | 15.020         
+S08DATA0012_Hz15_040.bin            | 15.040         
+S08DATA0013_Hz15_060.bin            | 15.060         
+S08DATA0014_Hz15_080.bin            | 15.080         
+S08DATA0015_Hz15_100.bin            | 15.100         
+S08DATA0016_Hz15_120.bin            | 15.120         
+S08DATA0017_Hz15_140.bin            | 15.140         
+S08DATA0018_Hz15_160.bin            | 15.160         
+S08DATA0019_Hz15_180.bin            | 15.180         
+S08DATA0020_Hz15_200.bin            | 15.200         
+S08DATA0021_Hz15_220.bin            | 15.220         
+S08DATA0022_Hz15_240.bin            | 15.240         
+S08DATA0023_Hz15_260.bin            | 15.260         
+S08DATA0024_Hz15_280.bin            | 15.280         
+S08DATA0025_Hz15_300.bin            | 15.300         
+S08DATA0026_Hz15_320.bin            | 15.320         
+S08DATA0027_Hz15_340.bin            | 15.340         
+S08DATA0028_Hz15_360.bin            | 15.360         
+S08DATA0029_Hz15_380.bin            | 15.380         
+S08DATA0030_Hz15_400.bin            | 15.400         
+S08DATA0031_Hz15_420.bin            | 15.420         
+S08DATA0032_Hz15_440.bin            | 15.440         
+S08DATA0033_Hz15_460.bin            | 15.460         
+S08DATA0034_Hz15_480.bin            | 15.480         
+S08DATA0035_Hz15_500.bin            | 15.500         
+S08DATA0036_Hz15_520.bin            | 15.520         
+S08DATA0037_Hz15_540.bin            | 15.540         
+S08DATA0038_Hz15_560.bin            | 15.560         
+S08DATA0039_Hz15_580.bin            | 15.580         
+S08DATA0040_Hz15_600.bin            | 15.600         
+S08DATA0041_Hz15_620.bin            | 15.620         
+S08DATA0042_Hz15_640.bin            | 15.640         
+S08DATA0043_Hz15_660.bin            | 15.660         
+S08DATA0044_Hz15_680.bin            | 15.680         
+S08DATA0045_Hz15_700.bin            | 15.700         

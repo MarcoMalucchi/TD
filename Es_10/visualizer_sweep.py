@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import signal
 import os  # Added to handle file system operations
 import re
+from scipy.optimize import curve_fit
 
 def read_synchronized_log(filename):
     packet_fmt = "<HhhhI" 
@@ -81,7 +82,10 @@ def sin_fit_func(x, a, b, c, d):
     return a*np.sin(b*x + c) + d
 
 # --- AUTOMATED FILE SELECTION ---
-path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_completa/'
+
+plt.close('all')
+
+path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_completa_x/'
 
 # Check if the FFT folder exists, if not, create it
 if not os.path.exists(path + "FFT/"):
@@ -95,7 +99,16 @@ print(f"Found {len(names)} acquisition files. Starting processing...")
 
 f = []
 Ax = []
+AmplitudeX = []
+s_AmX = []
+AmplitudeY = []
+s_AmY = []
+dephaseX = []
+s_dpX = []
+dephaseY = []
+s_dpY = []
 Ay = []
+forcing_amplitude = []
 i = 0
 
 for current_name in names:
@@ -110,13 +123,23 @@ for current_name in names:
 
     if len(data) > 1:
         
-        t = data[:-1,0]
+        # 1. Get raw timestamps
+        t_raw = data[:-1, 0]
+        t_sync = data[-1, 0]
+
+        # 2. Handle the 32-bit wrapping/two's complement on the raw values
+        # (Do this to both the array and the reference point)
+        t_raw = np.where(t_raw < 0, t_raw + (2**32)/1e6, t_raw)
+        t_sync = np.where(t_sync < 0, t_sync + (2**32)/1e6, t_sync)
+
+        # 3. Now shift. Values before the sync pulse will stay negative.
+        # Values at the sync pulse will be 0.
+        t = t_raw - t_sync
+
         # Divide by sensitivity to get 'g' units
         x, y, z = data[:-1,1]/16384.0, data[:-1,2]/16384.0, data[:-1,3]/16384.0
-        t = t - data[-1,0]
-        Ax.append(max(x)-min(x))
-        Ay.append(max(y)-min(y))
-        t = np.where(t<0, t+2**32/1e6, t)
+        Ax.append((max(x)-min(x))/2)
+        Ay.append((max(y)-min(y))/2)
 
         # fx, XF, PSDX = get_fft(t, x)
         # fy, YF, PSDY = get_fft(t, y)
@@ -131,9 +154,68 @@ for current_name in names:
         # Calcolo stima del delay temporale tra forzante e accelerazioni
         # l'idea è di trovare il primo punto in cui il segnale attraversa il livello 0
 
+        rising_indicesX = np.where(np.diff(np.sign(x-np.mean(x)))>0)[0]
+        rising_indicesY = np.where(np.diff(np.sign(y-np.mean(y)))>0)[0]
 
-        popt1 = [Ax[i], f[i], 1, np.mean(x)]
-        popt2 = [Ay[i], f[i], 1, np.mean(y)]
+        if rising_indicesX.size > 0:
+            first_rising_indexX = rising_indicesX[0]
+
+            delayX = t[first_rising_indexX]
+
+            # print(f"DelayX: {delayX}")
+            # print(f"DelayY: {delayY}")
+
+            p0X = [Ax[i], w, -w*delayX, np.mean(x)]
+            
+        else:
+            print(f"WARNING: No rising edge found for {current_name} in X axis")
+
+            p0X = [Ax[i], f[i], 0, np.mean(x)]
+        
+        if rising_indicesY.size > 0:
+            first_rising_indexY = rising_indicesY[0]
+
+            delayY = t[first_rising_indexY]
+
+            # print(f"DelayX: {delayX}")
+            # print(f"DelayY: {delayY}")
+
+            p0Y = [Ay[i], w, -w*delayY, np.mean(y)]
+            
+        else:
+            print(f"WARNING: No rising edge found for {current_name} in Y axis")
+
+            p0Y = [Ay[i], f[i], 0, np.mean(y)]
+
+        ppX, pcovX = curve_fit(sin_fit_func, t, x, p0=p0X)
+        ppY, pcovY = curve_fit(sin_fit_func, t, y, p0=p0Y)
+
+        # Aggiustamento parametri se ampiezzamisurata negativa
+        if ppX[0] < 0: 
+            ppX[0] *= -1
+            ppX[2] += np.pi    
+        if ppY[0] < 0:
+            ppY[0] *= -1
+            ppY[2] += np.pi
+
+        # Aggiornamento dei dati
+        AmplitudeX.append(ppX[0])
+        AmplitudeY.append(ppY[0])
+        s_AmX.append(np.sqrt(np.diag(pcovX))[0])
+        s_AmY.append(np.sqrt(np.diag(pcovY))[0])
+        
+        #Adjusting the dephasing values so that they are between -pi and pi
+
+        ppX[2] = (ppX[2] + np.pi) % (2*np.pi) - np.pi
+        ppY[2] = (ppY[2] + np.pi) % (2*np.pi) - np.pi
+
+        dephaseX.append(ppX[2])
+        dephaseY.append(ppY[2])
+        s_dpX.append(np.sqrt(np.diag(pcovX))[2])
+        s_dpY.append(np.sqrt(np.diag(pcovY))[2])
+
+        forcing_amplitude.append(37.39e-3*(w)**2) # 37.39e-3 distanza dall'asse di rotazione del motore del baricentro della massa fuori asse
+        # la forzante è data dall'accelerazione centrifuga agente sulla massa nell'SR solidale al disco di supporto
 
         # --- SAVING ---
         # save = False  
@@ -163,13 +245,44 @@ for current_name in names:
         #     fig.suptitle(f"File: {current_name} - {axis_label}")
         #     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-fig1, ax = plt.subplots()
-ax.scatter(f, Ax, c='green', s=10, label='X')
+fig, ax = plt.subplots(figsize=(12, 10))
+ax.scatter(f, Ax, c='green', s=1, label='X')
 ax.scatter(f, Ay, c='red', s=1, label='Y')
 ax.set_xlabel("Frequency [Hz]")
 ax.set_ylabel("Amplitude [g]")
-ax.set_title("Sweep")
+ax.set_title("Approsimative gain plot")
 ax.legend(loc='upper right')
+
+# Convert lists to numpy arrays
+dephaseX = np.array(dephaseX)
+dephaseY = np.array(dephaseY)
+
+# # Unroll the phase jumps
+# sort_idx = np.argsort(f)
+# f_sorted = np.array(f)[sort_idx]    #Just to have the frequency values inside an array rather than a list
+# dephaseX_sorted = dephaseX[sort_idx]    #The point here is that np.unwrap works well just with sorted values, and that's not my case.
+# dephaseY_sorted = dephaseY[sort_idx]
+
+# # Now unwrap the SORTED data
+# dephaseX_unwrapped = np.unwrap(dephaseX_sorted)
+# dephaseY_unwrapped = np.unwrap(dephaseY_sorted)
+
+fig1, ax1 = plt.subplots(figsize=(12, 10))
+ax1.errorbar(f, dephaseX, yerr=np.array(s_dpX), fmt='o', markersize=2, c='green', ecolor='lightgreen', label='X')
+ax1.errorbar(f, dephaseY, yerr=np.array(s_dpY), fmt='o', markersize=2, c='red', ecolor='lightcoral', label='Y')
+ax1.set_xlabel("Frequency [Hz]")
+ax1.set_ylabel("Dephase [rad]")
+ax1.set_title("Dephasing")
+ax1.legend(loc='upper right')
+
+fig2, ax2 = plt.subplots(figsize=(12, 10))
+ax2.errorbar(f, np.array(AmplitudeX)/np.array(forcing_amplitude), yerr=np.array(s_AmX)/np.array(forcing_amplitude), fmt='o', markersize=2, c='green', ecolor='lightgreen', label='X')
+ax2.errorbar(f, np.array(AmplitudeY)/np.array(forcing_amplitude), yerr=np.array(s_AmX)/np.array(forcing_amplitude), fmt='o', markersize=2, c='red', ecolor='lightcoral', label='Y')
+ax2.set_yscale('symlog', linthresh=1e-4)
+ax2.set_xlabel("Frequency [Hz]")
+ax2.set_ylabel("Amplitude [a.u.]")
+ax2.set_title("Amplitude")
+ax2.legend(loc='upper right')
 
 plt.show()
             

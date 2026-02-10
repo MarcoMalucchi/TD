@@ -9,13 +9,14 @@ from datetime import datetime
 # ==== CONFIGURAZIONE ====
 PORT = '/dev/ttyACM0'
 BAUD = 115200       #eventualmente raddoppiabile a 230400
-PARAMETERS = ["+0.1"]     # incremento in frequenza (positivo o negativo) o frequenze (freq max 11.5Hz, freq min 0.3Hz)
-INIT = 11.6      # frequenza iniziale in Hz (parte proprio da qui)
-REPEAT_N = 42    # numero di passi in freq, ignorato assieme a  INIT se si specificano le frrequenze in PARAMETERS,
+PARAMETERS = ["+0.02"]     # incremento in frequenza (positivo o negativo) o frequenze (freq max 11.5Hz, freq min 0.3Hz)
+INIT = 14.8      # frequenza iniziale in Hz (parte proprio da qui)
+REPEAT_N = 10    # numero di passi in freq, ignorato assieme a  INIT se si specificano le frequenze in PARAMETERS,
                 # oppure numero di acquisizioni in modalità manuale (OPERATING_MODE = 0)
 LOG_DURATION = 30  # durata acquisizione in secondi
-OPERATING_MODE = 1  # 0 = manuale, 1 = automatica (usa PARAMETERS e REPEAT_N)
-BASE_PATH = os.path.expanduser("/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_completa/")
+OPERATING_MODE = 0  # 0 = manuale, 1 = automatica (usa PARAMETERS e REPEAT_N)
+BASE_PATH = os.path.expanduser("/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/statistica/")
+#test_path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/test/'
 # =========================
 
 # Variabili di Stato Globali
@@ -205,7 +206,7 @@ def main():
 
             if OPERATING_MODE != 0:
                 send_command(ser, param)
-                time.sleep(20)      # Attendi 10 secondi per stabilizzazione oscillazione sistema prima di iniziare misura
+                time.sleep(30)      # Attendi 30 (per basse frequenze) o 20 (per frequenze medie/alte) secondi per stabilizzazione oscillazione sistema prima di iniziare misura
                 f_val = float(param)
                 wait_for_state("available")
             else:
