@@ -4,6 +4,17 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import os
 
+#======
+# NOTA.
+#======
+
+# Qui si assume che il rumore sia gaussiano, ma prendendo i bin dell'istrogramma pari alla risoluzione data dal ADC del sensore fare direttamente un fit gaussinao 
+#sulle occorrenze in ogni bin è sbagliato. Infatti, assumendo il rumore gaussiano, bisogno ulteriormente chiedersi quale sia la probabilità che il rumore caschi in
+#un certo bin. Questa probabilità è uniforme sull'intevallo del bin, cioè dibende dalla risoluzione dell'ADC.
+# Di conseguenza il problema che si sta caratterizzando statisticamente è: qual è la probabilità che un campione gaussiano caschi in un certo bin?
+# La risposta è data dalla convoluzione del rumore gaussiano con la distribuzione uniforme sull'intervallo del bin. Nel concreto integro la distribuzione gaussina
+#sull'intervallo del bin.
+
 # --- Helper Functions ---
 
 def read_synchronized_log(filename):
@@ -62,7 +73,9 @@ def get_physical_bins(data_array, res):
 
 path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/statistica/'
 names = sorted([f for f in os.listdir(path) if f.endswith('.bin') and f.startswith('S0')])
-LSB_res = 4.0 / 65536.0  
+LSB_res = 4.0 / 65536.0
+
+p_best_fit = np.array([])
 
 for current_name in names:
     data = read_synchronized_log(os.path.join(path, current_name))
