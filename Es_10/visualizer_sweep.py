@@ -46,23 +46,6 @@ def read_synchronized_log(filename):
     #print(i)
     return np.array(results)
 
-# def get_fft(t, sig, fs=200):
-#     n = len(t)
-#     sig_detrended = sig - np.mean(sig)
-#     fft_values = np.fft.rfft(sig_detrended)
-#     fft_freqs = np.fft.rfftfreq(n, d=1/fs)
-#     amplitude = np.abs(fft_values) * (2.0 / n)
-#     df = fs/n
-#     PSD = (amplitude**2)/(df*2)
-#     return fft_freqs, amplitude, PSD
-
-# def get_fft_welch_savgol(data, fs=200):
-#     sig_detrended = data - np.mean(data)
-#     f, Psd = signal.welch(sig_detrended, fs=fs, nperseg=min(len(sig_detrended), 4096))
-#     from scipy.signal import savgol_filter
-#     wPsd_smooth = savgol_filter(Psd, window_length=11, polyorder=2)
-#     return f, wPsd_smooth
-
 def extract_file_value(filename):
     # Regex breakdown:
     # (\d{2})  -> Group 1: Match exactly two digits
@@ -129,25 +112,18 @@ for current_name in names:
 
         # 2. Handle the 32-bit wrapping/two's complement on the raw values
         # (Do this to both the array and the reference point)
-        t_raw = np.where(t_raw < 0, t_raw + (2**32)/1e6, t_raw)
-        t_sync = np.where(t_sync < 0, t_sync + (2**32)/1e6, t_sync)
+        # t_raw = np.where(t_raw < 0, t_raw + (2**32)/1e6, t_raw)
+        # t_sync = np.where(t_sync < 0, t_sync + (2**32)/1e6, t_sync)
 
         # 3. Now shift. Values before the sync pulse will stay negative.
         # Values at the sync pulse will be 0.
         t = t_raw - t_sync
+        t = np.where(t < 0, t + (2**32)/1e6, t)
 
         # Divide by sensitivity to get 'g' units
         x, y, z = data[:-1,1]/16384.0, data[:-1,2]/16384.0, data[:-1,3]/16384.0
         Ax.append((max(x)-min(x))/2)
         Ay.append((max(y)-min(y))/2)
-
-        # fx, XF, PSDX = get_fft(t, x)
-        # fy, YF, PSDY = get_fft(t, y)
-        # fz, ZF, PSDZ = get_fft(t, z)
-
-        # w_sfx, w_sPSDX = get_fft_welch_savgol(x)
-        # w_sfy, w_sPSDY = get_fft_welch_savgol(y)
-        # w_sfz, w_sPSDZ = get_fft_welch_savgol(z)
 
         # --- STIMA PARAMETRI DI BEST FIT ---
 
@@ -162,9 +138,6 @@ for current_name in names:
 
             delayX = t[first_rising_indexX]
 
-            # print(f"DelayX: {delayX}")
-            # print(f"DelayY: {delayY}")
-
             p0X = [Ax[i], w, -w*delayX, np.mean(x)]
             
         else:
@@ -177,9 +150,6 @@ for current_name in names:
 
             delayY = t[first_rising_indexY]
 
-            # print(f"DelayX: {delayX}")
-            # print(f"DelayY: {delayY}")
-
             p0Y = [Ay[i], w, -w*delayY, np.mean(y)]
             
         else:
@@ -187,8 +157,8 @@ for current_name in names:
 
             p0Y = [Ay[i], f[i], 0, np.mean(y)]
 
-        ppX, pcovX = curve_fit(sin_fit_func, t, x, p0=p0X)
-        ppY, pcovY = curve_fit(sin_fit_func, t, y, p0=p0Y)
+        ppX, pcovX = curve_fit(sin_fit_func, t, x, p0=p0X, sigma=np.ones(len(x))*1.46e-3, absolute_sigma=True)
+        ppY, pcovY = curve_fit(sin_fit_func, t, y, p0=p0Y, sigma=np.ones(len(y))*1.41e-3, absolute_sigma=True)
 
         # Aggiustamento parametri se ampiezzamisurata negativa
         if ppX[0] < 0: 
@@ -209,6 +179,18 @@ for current_name in names:
         ppX[2] = (ppX[2] + np.pi) % (2*np.pi) - np.pi
         ppY[2] = (ppY[2] + np.pi) % (2*np.pi) - np.pi
 
+        # fig3, ax = plt.subplots(figsize=(12, 10))
+        # ax.plot(t, sin_fit_func(t, ppX[0], ppX[1], ppX[2], ppX[3]), c='blue', label='fit model')
+        # ax.scatter(t, x, c='green', s=1, label='X')
+        # # ax.plot(t, sin_fit_func(t, ppY[0], ppY[1], ppY[2], ppY[3]), c='black', label='Y')
+        # # ax.scatter(t, y, c='red', s=1, label='Y')
+        # ax.plot(t, ppX[0]*np.sin(ppX[1]*t) + ppX[3], c='red', label='driving force')
+        # ax.set_xlabel("Time [s]")
+        # ax.set_ylabel("Acceleration [g]")
+        # ax.set_title("Fit sinusoidale di prova")
+        # ax.legend(loc='upper right')
+        # plt.show()
+
         dephaseX.append(ppX[2])
         dephaseY.append(ppY[2])
         s_dpX.append(np.sqrt(np.diag(pcovX))[2])
@@ -228,23 +210,6 @@ for current_name in names:
 
         i += 1
 
-        # --- Plotting ---
-        # (Keeping your original plotting loop exactly as is)
-        # for i in range(2):
-        #     fig, ax1 = plt.subplots(figsize=(12, 10))
-        #     if i == 0:
-        #         sig, color, axis_label = x, 'blue', 'X-Axis'
-        #     elif i == 1:
-        #         sig, color, axis_label = y, 'green', 'Y-Axis'
-            
-        #     ax1.scatter(t, sig, color=color, s=0.5, label=f'{axis_label} accelaration')
-        #     ax1.plot(t, 0.025*np.sin(w*t) + np.mean(sig), color='red', label=f'Forzante')
-        #     ax1.set_xlabel("Time [s]")
-        #     ax1.set_ylabel("Acceleration [g]")
-        #     ax1.legend()
-        #     fig.suptitle(f"File: {current_name} - {axis_label}")
-        #     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-
 fig, ax = plt.subplots(figsize=(12, 10))
 ax.scatter(f, Ax, c='green', s=1, label='X')
 ax.scatter(f, Ay, c='red', s=1, label='Y')
@@ -257,19 +222,9 @@ ax.legend(loc='upper right')
 dephaseX = np.array(dephaseX)
 dephaseY = np.array(dephaseY)
 
-# # Unroll the phase jumps
-# sort_idx = np.argsort(f)
-# f_sorted = np.array(f)[sort_idx]    #Just to have the frequency values inside an array rather than a list
-# dephaseX_sorted = dephaseX[sort_idx]    #The point here is that np.unwrap works well just with sorted values, and that's not my case.
-# dephaseY_sorted = dephaseY[sort_idx]
-
-# # Now unwrap the SORTED data
-# dephaseX_unwrapped = np.unwrap(dephaseX_sorted)
-# dephaseY_unwrapped = np.unwrap(dephaseY_sorted)
-
 fig1, ax1 = plt.subplots(figsize=(12, 10))
 ax1.errorbar(f, dephaseX, yerr=np.array(s_dpX), fmt='o', markersize=2, c='green', ecolor='lightgreen', label='X')
-ax1.errorbar(f, dephaseY, yerr=np.array(s_dpY), fmt='o', markersize=2, c='red', ecolor='lightcoral', label='Y')
+#ax1.errorbar(f, dephaseY, yerr=np.array(s_dpY), fmt='o', markersize=2, c='red', ecolor='lightcoral', label='Y')
 ax1.set_xlabel("Frequency [Hz]")
 ax1.set_ylabel("Dephase [rad]")
 ax1.set_title("Dephasing")
@@ -277,7 +232,7 @@ ax1.legend(loc='upper right')
 
 fig2, ax2 = plt.subplots(figsize=(12, 10))
 ax2.errorbar(f, np.array(AmplitudeX)/np.array(forcing_amplitude), yerr=np.array(s_AmX)/np.array(forcing_amplitude), fmt='o', markersize=2, c='green', ecolor='lightgreen', label='X')
-ax2.errorbar(f, np.array(AmplitudeY)/np.array(forcing_amplitude), yerr=np.array(s_AmX)/np.array(forcing_amplitude), fmt='o', markersize=2, c='red', ecolor='lightcoral', label='Y')
+#ax2.errorbar(f, np.array(AmplitudeY)/np.array(forcing_amplitude), yerr=np.array(s_AmX)/np.array(forcing_amplitude), fmt='o', markersize=2, c='red', ecolor='lightcoral', label='Y')
 ax2.set_yscale('symlog', linthresh=1e-4)
 ax2.set_xlabel("Frequency [Hz]")
 ax2.set_ylabel("Amplitude [a.u.]")
@@ -285,4 +240,35 @@ ax2.set_title("Amplitude")
 ax2.legend(loc='upper right')
 
 plt.show()
-            
+
+# ================= SAVE SWEEP FRF DATA =================
+
+save = True
+
+if save:
+    output_folder = os.path.join(path, "FRF")
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    f_arr = np.array(f)
+    Hx = np.array(AmplitudeX) / np.array(forcing_amplitude)
+    Hy = np.array(AmplitudeY) / np.array(forcing_amplitude)
+
+    sHx = np.array(s_AmX) / np.array(forcing_amplitude)
+    sHy = np.array(s_AmY) / np.array(forcing_amplitude)
+
+    header = "Frequency[Hz], Hx, sHx, Hy, sHy"
+
+    np.savetxt(
+        os.path.join(output_folder, "SWEEP_FRF.csv"),
+        np.column_stack((f_arr, Hx, sHx, Hy, sHy)),
+        delimiter=",",
+        header=header,
+        comments=""
+    )
+
+    print("✅ FRF sweep data saved.")
+
+
+
+
