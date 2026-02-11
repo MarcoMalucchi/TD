@@ -125,15 +125,15 @@ if all_stats:
     for axis in ['X', 'Y']:
         for param in ['mu', 'sigma']:
             vals = np.array([f[f'{axis}_{param}'] for f in all_stats])
-            print(f"{axis}_{param}: {vals}")
+            #print(f"{axis}_{param}: {vals}")
             errs = np.array([f[f'{axis}_{param}_err'] for f in all_stats])
-            print(f"{axis}_{param}_err: {errs}")
+            #print(f"{axis}_{param}_err: {errs}")
             final_values[f'{axis}_{param}'] = weighted_mean(vals, errs)
-            final_errors[f'{axis}_{param}'] = weighted_std(errs)
+            final_errors[f'{axis}_{param}'] = np.sqrt(weighted_std(errs))
 
     print("\n--- RISULTATI FINALI (MEDIA PESATA) ---")
-    print(f"ASSE X: Media = {final_values['X_mu']:.3f} +/- {final_errors['X_mu']:.11f} [g], DevStd = {final_values['X_sigma']:.3e} +/- {final_errors['X_sigma']:.6e} [g]")
-    print(f"ASSE Y: Media = {final_values['Y_mu']:.3f} +/- {final_errors['Y_mu']:.11f} [g], DevStd = {final_values['Y_sigma']:.3e} +/- {final_errors['Y_sigma']:.6e} [g]")
+    print(f"ASSE X: Media = {final_values['X_mu']:.6e} +/- {final_errors['X_mu']:.6e} [g], DevStd = {final_values['X_sigma']:.6e} +/- {final_errors['X_sigma']:.6e} [g]")
+    print(f"ASSE Y: Media = {final_values['Y_mu']:.6e} +/- {final_errors['Y_mu']:.6e} [g], DevStd = {final_values['Y_sigma']:.6e} +/- {final_errors['Y_sigma']:.6e} [g]")
 
     # FIGURA MEDIE: Subplot separati per X e Y per vedere le oscillazioni
     fig_mu, axs_mu = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
