@@ -57,9 +57,14 @@ def weighted_mean(values, errors):
     w_mean = np.sum(weights * values) / np.sum(weights)
     return w_mean
 
+def weighted_std(errors):
+    weights = 1.0 / (errors**2)
+    w_std = 1/np.sum(weights)
+    return w_std
+
 # --- Main Loop ---
 
-path = "C:\\Users\\aless\\Desktop\\TD_ale\\TD\\Es_10\\acquisizioni\\parte_1\\statistica"
+path = "/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/statistica/"
 names = sorted([f for f in os.listdir(path) if f.endswith('.bin') and f.startswith('S0')])
 LSB_res = 4.0 / 65536.0
 
@@ -116,15 +121,19 @@ for current_name in names:
 
 if all_stats:
     final_values = {}
+    final_errors = {}
     for axis in ['X', 'Y']:
         for param in ['mu', 'sigma']:
             vals = np.array([f[f'{axis}_{param}'] for f in all_stats])
+            print(f"{axis}_{param}: {vals}")
             errs = np.array([f[f'{axis}_{param}_err'] for f in all_stats])
+            print(f"{axis}_{param}_err: {errs}")
             final_values[f'{axis}_{param}'] = weighted_mean(vals, errs)
+            final_errors[f'{axis}_{param}'] = weighted_std(errs)
 
     print("\n--- RISULTATI FINALI (MEDIA PESATA) ---")
-    print(f"ASSE X: Media = {final_values['X_mu']:.6f} g, DevStd = {final_values['X_sigma']:.6e} g")
-    print(f"ASSE Y: Media = {final_values['Y_mu']:.6f} g, DevStd = {final_values['Y_sigma']:.6e} g")
+    print(f"ASSE X: Media = {final_values['X_mu']:.3f} +/- {final_errors['X_mu']:.11f} [g], DevStd = {final_values['X_sigma']:.3e} +/- {final_errors['X_sigma']:.6e} [g]")
+    print(f"ASSE Y: Media = {final_values['Y_mu']:.3f} +/- {final_errors['Y_mu']:.11f} [g], DevStd = {final_values['Y_sigma']:.3e} +/- {final_errors['Y_sigma']:.6e} [g]")
 
     # FIGURA MEDIE: Subplot separati per X e Y per vedere le oscillazioni
     fig_mu, axs_mu = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
