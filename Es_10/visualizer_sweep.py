@@ -68,7 +68,7 @@ def sin_fit_func(x, a, b, c, d):
 
 plt.close('all')
 
-path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_completa_x/'
+path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_completa_y/'
 
 # Check if the FFT folder exists, if not, create it
 if not os.path.exists(path + "FFT/"):
@@ -173,11 +173,6 @@ for current_name in names:
         AmplitudeY.append(ppY[0])
         s_AmX.append(np.sqrt(np.diag(pcovX))[0])
         s_AmY.append(np.sqrt(np.diag(pcovY))[0])
-        
-        #Adjusting the dephasing values so that they are between -pi and pi
-
-        ppX[2] = (ppX[2] + np.pi) % (2*np.pi) - np.pi
-        ppY[2] = (ppY[2] + np.pi) % (2*np.pi) - np.pi
 
         # fig3, ax = plt.subplots(figsize=(12, 10))
         # ax.plot(t, sin_fit_func(t, ppX[0], ppX[1], ppX[2], ppX[3]), c='blue', label='fit model')
@@ -196,6 +191,9 @@ for current_name in names:
         s_dpX.append(np.sqrt(np.diag(pcovX))[2])
         s_dpY.append(np.sqrt(np.diag(pcovY))[2])
 
+
+
+
         forcing_amplitude.append(37.39e-3*(w)**2) # 37.39e-3 distanza dall'asse di rotazione del motore del baricentro della massa fuori asse
         # la forzante è data dall'accelerazione centrifuga agente sulla massa nell'SR solidale al disco di supporto
 
@@ -210,29 +208,74 @@ for current_name in names:
 
         i += 1
 
-fig, ax = plt.subplots(figsize=(12, 10))
-ax.scatter(f, Ax, c='green', s=1, label='X')
-ax.scatter(f, Ay, c='red', s=1, label='Y')
-ax.set_xlabel("Frequency [Hz]")
-ax.set_ylabel("Amplitude [g]")
-ax.set_title("Approsimative gain plot")
-ax.legend(loc='upper right')
+# fig, ax = plt.subplots(figsize=(12, 10))
+# ax.scatter(f, Ax, c='green', s=1, label='X')
+# ax.scatter(f, Ay, c='red', s=1, label='Y')
+# ax.set_xlabel("Frequency [Hz]")
+# ax.set_ylabel("Amplitude [g]")
+# ax.set_title("Approsimative gain plot")
+# ax.legend(loc='upper right')
 
-# Convert lists to numpy arrays
+# 1. Convert everything to a single NumPy array for easy manipulation
+f = np.array(f)
 dephaseX = np.array(dephaseX)
+s_dpX = np.array(s_dpX)
 dephaseY = np.array(dephaseY)
+s_dpY = np.array(s_dpY)
 
+# 2. SORT the data by frequency (Crucial for unwrap to work)
+sort_idx = np.argsort(f)
+f_sorted = f[sort_idx]
+dpX_sorted = dephaseX[sort_idx]
+s_dpX_sorted = s_dpX[sort_idx]
+dpY_sorted = dephaseY[sort_idx]
+s_dpY_sorted = s_dpY[sort_idx]
+
+# 3. Normalize phases to the [-pi, pi] or [0, -2pi] range BEFORE unwrapping
+# This removes the random 2*pi offsets from the curve_fit initialization
+dpX_normalized = (dpX_sorted + np.pi) % (2 * np.pi) - np.pi
+dpY_normalized = (dpY_sorted + np.pi) % (2 * np.pi) - np.pi
+
+# 4. Now apply unwrap on the sorted, normalized data
+dephaseX_unwrapped = np.unwrap(dpX_normalized)
+dephaseY_unwrapped = np.unwrap(dpY_normalized)
+
+# --- IMPROVED PLOTTING ---
 fig1, ax1 = plt.subplots(figsize=(12, 10))
-ax1.errorbar(f, dephaseX, yerr=np.array(s_dpX), fmt='o', markersize=2, c='green', ecolor='lightgreen', label='X')
-#ax1.errorbar(f, dephaseY, yerr=np.array(s_dpY), fmt='o', markersize=2, c='red', ecolor='lightcoral', label='Y')
+
+# Plot data
+ax1.errorbar(f_sorted, dephaseX_unwrapped, yerr=s_dpX_sorted, 
+             fmt='o', markersize=2, c='green', alpha=0.7, label='X phase')
+ax1.errorbar(f_sorted, dephaseY_unwrapped, yerr=s_dpY_sorted, 
+             fmt='o', markersize=2, c='red', alpha=0.7, label='Y phase')
+
+# Intelligent Y-limits: 
+# If one axis is just noise (diving to -20), we might want to focus on the signal.
+# For now, let's just make sure we see everything:
+valid_vals = np.concatenate([dephaseX_unwrapped, dephaseY_unwrapped])
+y_min_val = np.nanmin(valid_vals)
+y_max_val = np.nanmax(valid_vals)
+
+# Create ticks every pi/2
+tick_min = np.floor(y_min_val / (np.pi/2)) * (np.pi/2)
+tick_max = np.ceil(y_max_val / (np.pi/2)) * (np.pi/2)
+ticks = np.arange(tick_min, tick_max + 0.1, np.pi/2)
+
+ax1.set_yticks(ticks)
+# Format labels to show fractions of pi for clarity
+ax1.set_yticklabels([f"{v/np.pi:.2f}π" for v in ticks])
+
+ax1.set_ylim(tick_min - 0.5, tick_max + 0.5)
 ax1.set_xlabel("Frequency [Hz]")
 ax1.set_ylabel("Dephase [rad]")
-ax1.set_title("Dephasing")
-ax1.legend(loc='upper right')
+ax1.set_title("Dephase Comparison (X vs Y)")
+ax1.grid(True, which='both', linestyle='--', alpha=0.5)
+ax1.legend()
+plt.show()
 
 fig2, ax2 = plt.subplots(figsize=(12, 10))
 ax2.errorbar(f, np.array(AmplitudeX)/np.array(forcing_amplitude), yerr=np.array(s_AmX)/np.array(forcing_amplitude), fmt='o', markersize=2, c='green', ecolor='lightgreen', label='X')
-#ax2.errorbar(f, np.array(AmplitudeY)/np.array(forcing_amplitude), yerr=np.array(s_AmX)/np.array(forcing_amplitude), fmt='o', markersize=2, c='red', ecolor='lightcoral', label='Y')
+ax2.errorbar(f, np.array(AmplitudeY)/np.array(forcing_amplitude), yerr=np.array(s_AmX)/np.array(forcing_amplitude), fmt='o', markersize=2, c='red', ecolor='lightcoral', label='Y')
 ax2.set_yscale('symlog', linthresh=1e-4)
 ax2.set_xlabel("Frequency [Hz]")
 ax2.set_ylabel("Amplitude [a.u.]")
@@ -243,31 +286,45 @@ plt.show()
 
 # ================= SAVE SWEEP FRF DATA =================
 
-save = True
+save = True   # <-- activate
 
 if save:
     output_folder = os.path.join(path, "FRF")
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    f_arr = np.array(f)
-    Hx = np.array(AmplitudeX) / np.array(forcing_amplitude)
-    Hy = np.array(AmplitudeY) / np.array(forcing_amplitude)
+    # Use SORTED data (important!)
+    Hx = np.array(AmplitudeX)[sort_idx] / np.array(forcing_amplitude)[sort_idx]
+    Hy = np.array(AmplitudeY)[sort_idx] / np.array(forcing_amplitude)[sort_idx]
 
-    sHx = np.array(s_AmX) / np.array(forcing_amplitude)
-    sHy = np.array(s_AmY) / np.array(forcing_amplitude)
+    sHx = np.array(s_AmX)[sort_idx] / np.array(forcing_amplitude)[sort_idx]
+    sHy = np.array(s_AmY)[sort_idx] / np.array(forcing_amplitude)[sort_idx]
 
-    header = "Frequency[Hz], Hx, sHx, Hy, sHy"
+    header = ("Frequency[Hz], "
+              "Hx, sHx, Hy, sHy, "
+              "PhaseX[rad], sPhaseX, "
+              "PhaseY[rad], sPhaseY")
 
     np.savetxt(
         os.path.join(output_folder, "SWEEP_FRF.csv"),
-        np.column_stack((f_arr, Hx, sHx, Hy, sHy)),
+        np.column_stack((
+            f_sorted,
+            Hx,
+            sHx,
+            Hy,
+            sHy,
+            dephaseX_unwrapped,
+            s_dpX_sorted,
+            dephaseY_unwrapped,
+            s_dpY_sorted
+        )),
         delimiter=",",
         header=header,
         comments=""
     )
 
-    print("✅ FRF sweep data saved.")
+    print("✅ FRF sweep data (magnitude + phase) saved.")
+
 
 
 

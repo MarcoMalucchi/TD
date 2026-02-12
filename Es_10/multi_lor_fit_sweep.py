@@ -1,178 +1,164 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
-from scipy.signal import find_peaks
+from scipy.optimize import least_squares
 import os
 
-plt.close('all')
+plt.rcParams.update({
+    'font.size': 12,
+    'axes.labelweight': 'bold'
+})
 
-# ================= MODEL (FRF amplitude) =================
+# ================= PATH =================
 
-def single_frf(f, f0, K, zeta):
-    num = K * f**2
-    den = np.sqrt((f0**2 - f**2)**2 + (2*zeta*f0*f)**2)
-    return num / den
+target_path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_completa_y/FRF/'
 
-def multi_frf(f, *params):
-    res = np.zeros_like(f)
-    for i in range(0, len(params), 3):
-        res += single_frf(f, params[i], params[i+1], params[i+2])
-    return res
-
-
-# ================= LOAD FRF DATA =================
-
-path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_completa_x/FRF/'
-data = np.loadtxt(os.path.join(path, "SWEEP_FRF.csv"), delimiter=",", skiprows=1)
-
-f_data = data[:,0]
-Hx = data[:,1]
-sHx = data[:,2]
-Hy = data[:,3]
-sHy = data[:,4]
-
-# -------- choose axis ----------
-H_data = Hx
-sigma_data = sHx
-axis_name = 'X'
-
-# ================= SORT BY FREQUENCY =================
-
-order = np.argsort(f_data)
-
-f_data = f_data[order]
-H_data = H_data[order]
-sigma_data = sigma_data[order]
-
-
-
-# ================= PEAK SELECTION (same logic as PSD script) =================
-
-base_threshold = np.max(H_data) * 0.05
-init_p, _ = find_peaks(H_data, height=base_threshold, distance=10)
-
-if len(init_p) > 0:
-    buffer_limit = base_threshold + (0.05 * (np.max(H_data) - base_threshold))
-    peaks = [p for p in init_p if (f_data[p] >= 12.0 or H_data[p] > buffer_limit)]
-    peaks = np.array(peaks)
+# Detect axis automatically
+if "_x" in target_path.lower():
+    axis = "X"
+elif "_y" in target_path.lower():
+    axis = "Y"
 else:
-    peaks, buffer_limit = np.array([]), base_threshold
+    raise ValueError("Cannot detect axis from path name.")
 
-print(f"Detected peaks at: {f_data[peaks]}")
+print(f"\nDetected sweep axis: {axis}")
 
+# ================= MODEL =================
 
-# ================= INITIAL GUESSES =================
+def modal_complex_model(f, params):
+    w = 2*np.pi*f
+    n_modes = len(params)//3
+    H = 0
+    for k in range(n_modes):
+        wk, Rk, zk = params[3*k], params[3*k+1], params[3*k+2]
+        H += Rk / (wk**2 - w**2 + 1j*2*zk*wk*w)
+    return H
 
-guesses = []
-for p in peaks:
-    f0_g = f_data[p]
-    K_g = H_data[p] * (f0_g**2)
-    zeta_g = 0.02
-    guesses.extend([f0_g, K_g, zeta_g])
+def residuals(params, f, H_exp):
+    H_model = modal_complex_model(f, params)
+    return np.concatenate([
+        np.real(H_model - H_exp),
+        np.imag(H_model - H_exp)
+    ])
 
+# ================= LOAD DATA =================
 
-# ================= BOUNDS =================
+data = np.loadtxt(os.path.join(target_path, "SWEEP_FRF.csv"),
+                  delimiter=",", skiprows=1)
 
-bounds_l, bounds_u = [], []
-for i in range(len(peaks)):
-    f0_g, K_g, zeta_g = guesses[3*i:3*i+3]
-    bounds_l.extend([f0_g - 0.5, 0, 0.001])
-    bounds_u.extend([f0_g + 0.5, K_g * 10, 0.2])
+data = data[np.argsort(data[:,0])][10:]  # sort + discard first 10
 
+f = data[:,0]
+
+if axis == "X":
+    H_mag = data[:,1]
+    sH    = data[:,2]
+    phase = data[:,5]
+    expected_fs = [0.88, 4.75, 5.88, 15.3]
+else:
+    H_mag = data[:,3]
+    sH    = data[:,4]
+    phase = data[:,7]
+    expected_fs = [1.76, 4.75, 5.88, 15.3]
+
+# Threshold selection
+mask = H_mag > 1e-3
+f_fit = f[mask]
+H_complex = H_mag[mask] * np.exp(1j*phase[mask])
+
+# ================= INITIAL GUESS =================
+
+p0 = []
+for fs in expected_fs:
+    p0 += [2*np.pi*fs, 1.0, 0.02]
+p0 = np.array(p0)
 
 # ================= FIT =================
 
-popt, pcov = curve_fit(
-    multi_frf,
-    f_data,
-    H_data,
-    p0=guesses,
-    sigma=sigma_data,
-    absolute_sigma=True,
-    bounds=(bounds_l, bounds_u),
-    maxfev=50000
+result = least_squares(
+    residuals,
+    p0,
+    args=(f_fit, H_complex),
+    max_nfev=40000
 )
 
-perr = np.sqrt(np.diag(pcov))
-fit_curve = multi_frf(f_data, *popt)
-residuals = H_data - fit_curve
+popt = result.x
 
+# ================= STATISTICS =================
 
-# ================= RESULTS + CHI SQUARE =================
+H_fit_complex = modal_complex_model(f_fit, popt)
+res_complex = H_complex - H_fit_complex
 
-print("\n=========== SWEEP FRF FIT RESULTS ===========")
-for i in range(0, len(popt), 3):
-    f0, K, zeta = popt[i:i+3]
-    sf0, sK, sz = perr[i:i+3]
-    Q = 1/(2*zeta)
-    print(f"Mode {i//3+1}:")
-    print(f"  f0   = {f0:.4f} ± {sf0:.4f} Hz")
-    print(f"  zeta = {zeta:.5f} ± {sz:.5f}")
-    print(f"  Q    = {Q:.2f}")
+chi2 = np.sum(np.abs(res_complex)**2)
+dof = 2*len(f_fit) - len(popt)
+red_chi2 = chi2 / dof
+sigma_chi2 = np.sqrt(2/dof)
 
-dof = len(f_data) - len(popt)
-red_chi = np.sum((residuals / sigma_data)**2) / dof
-print(f"\nReduced Chi-Square: {red_chi:.4f} (Expected Std Dev: {np.sqrt(2/dof):.4f})")
+# ================= PRINT RESULTS =================
 
+print("\n" + "="*70)
+print(f"MODAL IDENTIFICATION RESULTS — AXIS {axis}")
+print(f"DOF = {dof}")
+print(f"Reduced Chi² = {red_chi2:.5f} ± {sigma_chi2:.5f}")
+print("-"*70)
+print(f"{'Mode':<6}{'f_n [Hz]':<12}{'Residue R':<14}{'Damping ζ':<12}")
 
-# ================= FIGURE A (fit + symlog residuals) =================
+for k in range(len(expected_fs)):
+    fn = popt[3*k]/(2*np.pi)
+    Rk = popt[3*k+1]
+    zk = popt[3*k+2]
+    print(f"{k+1:<6}{fn:<12.4f}{Rk:<14.5f}{zk:<12.5f}")
 
-fig_comb, (ax1, ax2) = plt.subplots(
-    2, 1, figsize=(10, 8), sharex=True,
-    gridspec_kw={'height_ratios': [3, 1]}
-)
+print("="*70 + "\n")
 
-# --- DATA + FIT (semilog y) ---
+# ================= FULL MODEL =================
+
+H_full = modal_complex_model(f, popt)
+
+# ================= PLOT 1 — AMPLITUDE =================
+
+fig1, (ax1, ax2) = plt.subplots(2,1, figsize=(9,8), sharex=True)
+
+# Top: fit + data
 ax1.set_yscale('log')
-ax1.errorbar(
-    f_data, H_data,
-    yerr=sigma_data,
-    fmt='o',
-    markersize=3,
-    alpha=0.6,
-    label='Data'
-)
-ax1.plot(f_data, fit_curve, 'r-', linewidth=2, label='FRF Fit')
-
-ax1.axhspan(base_threshold, buffer_limit, color='gray', alpha=0.15, label='Buffer Zone')
-ax1.axvline(12, color='b', linestyle=':', alpha=0.5, label='12 Hz Filter')
-
-ax1.set_ylabel("|H(f)|")
-ax1.grid(True, which="both", alpha=0.2)
+ax1.plot(f, np.abs(H_full), 'r', lw=2, label='Model')
+ax1.scatter(f, H_mag, s=15, alpha=0.6, label='Data')
+ax1.set_ylabel("Amplitude ratio")
 ax1.legend()
+ax1.grid(True, which='both')
 
-# --- RESIDUALS SYMLOG ---
+# Bottom: residuals
+amp_res = H_mag - np.abs(H_full)
+ax2.axhline(0, color='k', lw=1)
+ax2.scatter(f, amp_res, s=10)
 ax2.set_yscale('symlog', linthresh=1e-4)
-ax2.errorbar(
-    f_data,
-    residuals,
-    yerr=sigma_data,
-    fmt='o',
-    markersize=3,
-    alpha=0.6
-)
-ax2.axhline(0, color='k', linestyle='--')
-ax2.set_ylabel("Res. (Symlog)")
-ax2.grid(True, which="both", alpha=0.2)
-
+ax2.set_ylabel("Residuals")
 ax2.set_xlabel("Frequency [Hz]")
+ax2.grid(True, which='both')
 
+fig1.suptitle(f"Amplitude Fit — Axis {axis}")
+plt.show()
 
-# ================= FIGURE B (linear residuals) =================
+# ================= PLOT 2 — PHASE =================
 
-fig_lin = plt.figure(figsize=(10, 5))
-plt.errorbar(
-    f_data,
-    residuals,
-    yerr=sigma_data,
-    fmt='o',
-    markersize=3,
-    alpha=0.8
-)
-plt.axhline(0, color='black', linestyle='--')
-plt.ylabel("Residuals (linear)")
-plt.xlabel("Frequency [Hz]")
-plt.grid(True, alpha=0.3)
-plt.title(f"Linear Residuals - Sweep FRF ({axis_name})")
+fig2, (ax3, ax4) = plt.subplots(2,1, figsize=(9,8), sharex=True)
 
+phase_model = np.unwrap(np.angle(H_full))
+
+# Top: phase fit
+ax3.plot(f, phase_model, 'r', lw=2, label='Model')
+ax3.scatter(f, phase, s=15, alpha=0.6, label='Data')
+ax3.set_ylabel("Phase [rad]")
+ax3.legend()
+ax3.grid(True)
+
+# Bottom: residuals
+phase_res = phase - phase_model
+ax4.axhline(0, color='k', lw=1)
+ax4.scatter(f, phase_res, s=10)
+ax4.set_yscale('symlog', linthresh=1e-2)
+ax4.set_ylabel("Residuals")
+ax4.set_xlabel("Frequency [Hz]")
+ax4.grid(True)
+
+fig2.suptitle(f"Phase Fit — Axis {axis}")
 plt.show()

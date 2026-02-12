@@ -32,9 +32,9 @@ Hy = data[:,3]
 sHy = data[:,4]
 
 # -------- choose axis ----------
-H_data = Hx
-sigma_data = sHx
-axis_name = 'X'
+H_data = Hy
+sigma_data = sHy
+axis_name = 'Y'
 
 # ================= SORT BY FREQUENCY (CRUCIAL) =================
 
