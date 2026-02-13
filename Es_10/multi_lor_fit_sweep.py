@@ -31,7 +31,7 @@ def modal_complex_model(f, params):
     for k in range(n_modes):
         wk, Rk, zk = params[3*k], params[3*k+1], params[3*k+2]
         H += Rk / (wk**2 - w**2 + 1j*2*zk*wk*w)
-    return H
+    return w**2 * H
 
 def residuals(params, f, H_exp):
     H_model = modal_complex_model(f, params)

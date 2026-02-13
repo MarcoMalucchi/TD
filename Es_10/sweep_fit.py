@@ -5,7 +5,7 @@ import os
 
 # ================= PATH =================
 
-target_path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_completa_y/FRF/'
+target_path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/spazzata_completa_x/FRF/'
 
 if "_x" in target_path.lower():
     axis = "X"

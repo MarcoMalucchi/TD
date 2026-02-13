@@ -286,7 +286,7 @@ plt.show()
 
 # ================= SAVE SWEEP FRF DATA =================
 
-save = True   # <-- activate
+save = False   # <-- activate
 
 if save:
     output_folder = os.path.join(path, "FRF")
