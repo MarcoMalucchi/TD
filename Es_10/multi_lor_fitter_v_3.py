@@ -22,7 +22,7 @@ plt.rcParams.update({
 # --- CONFIGURATION ---
 root_path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/'
 plt.close('all')
-save = True  # Set to False to disable all disk writing
+save = False  # Set to False to disable all disk writing
 unit_label = r"$\mathrm{g^2/Hz}$"
 
 def single_lorentzian(f, f0, A, gamma):
