@@ -170,7 +170,7 @@ ax1.errorbar(f_exp, amp_exp, yerr=amp_err,
              fmt='.', color='black',
              ecolor='black', capsize=3)
 
-ax1.plot(f_dense, model_amplitude(f_dense, *popt_amp))
+ax1.plot(f_dense, model_amplitude(f_dense, *popt_amp), color='red', linewidth=2)
 ax1.set_yscale('log')
 ax1.set_title(f"Amplitude Fit - Axis {axis}")
 ax1.set_ylabel("Amplitude ratio")
@@ -180,7 +180,7 @@ ax2.errorbar(f_exp, res_amp, yerr=amp_err,
              fmt='.', color='black',
              ecolor='black', capsize=3)
 
-ax2.axhline(0)
+ax2.axhline(0, color='red', linestyle='--')
 ax2.set_yscale('symlog')
 ax2.set_ylabel("Residuals (Amplitude ratio)")
 ax2.set_xlabel("Frequency [Hz]")
@@ -194,7 +194,7 @@ ax3.errorbar(f_exp, phase_exp, yerr=phase_err,
              fmt='.', color='black',
              ecolor='black', capsize=3)
 
-ax3.plot(f_dense, model_phase(f_dense, *popt_phase))
+ax3.plot(f_dense, model_phase(f_dense, *popt_phase), color='red', linewidth=2)
 ax3.set_title(f"Phase Fit - Axis {axis}")
 ax3.set_ylabel("Phase [rad]")
 ax3.grid(True)
@@ -203,7 +203,7 @@ ax4.errorbar(f_exp, res_phase, yerr=phase_err,
              fmt='.', color='black',
              ecolor='black', capsize=3)
 
-ax4.axhline(0)
+ax4.axhline(0, color='red', linestyle='--')
 ax4.set_ylabel("Residuals [rad]")
 ax4.set_xlabel("Frequency [Hz]")
 ax4.grid(True)
