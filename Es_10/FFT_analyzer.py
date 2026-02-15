@@ -10,7 +10,7 @@ from scipy.signal import find_peaks
 
 # --- Configuration ---
 path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_bassa_y/FFT/'
-save_results = True  # Toggle for saving
+save_results = False  # Toggle for saving
 
 # 1. Scan for the FFT files
 fft_files = sorted([f for f in os.listdir(path) if f.endswith('_FFT.txt')])

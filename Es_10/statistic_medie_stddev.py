@@ -60,9 +60,14 @@ def weighted_mean(values, errors):
     w_error = np.sqrt(1.0 / np.sum(weights))
     return w_mean, w_error
 
+def weighted_std(errors):
+    weights = 1.0 / (errors**2)
+    w_std = 1/np.sum(weights)
+    return w_std
+
 # --- Main Loop ---
 
-path = "C:\\Users\\aless\\Desktop\\TD_ale\\TD\\Es_10\\acquisizioni\\parte_1\\statistica"
+path = "/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/statistica/"
 names = sorted([f for f in os.listdir(path) if f.endswith('.bin') and f.startswith('S0')])
 LSB_res = 4.0 / 65536.0
 
@@ -119,9 +124,11 @@ for current_name in names:
 
 if all_stats:
     final_values = {}
+    final_errors = {}
     for axis in ['X', 'Y']:
         for param in ['mu', 'sigma']:
             vals = np.array([f[f'{axis}_{param}'] for f in all_stats])
+            #print(f"{axis}_{param}: {vals}")
             errs = np.array([f[f'{axis}_{param}_err'] for f in all_stats])
             
             # Ottengo valore e incertezza finale
