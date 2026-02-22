@@ -52,10 +52,13 @@ def get_physical_bins(data_array, res):
     kmax = np.ceil(np.max(data_array) / res)
     return np.arange(kmin, kmax + 1) * res
 
+# --- Funzione modificata per includere l'incertezza (Formula 8.12) ---
 def weighted_mean(values, errors):
     weights = 1.0 / (errors**2)
     w_mean = np.sum(weights * values) / np.sum(weights)
-    return w_mean
+    # Incertezza sulla media pesata: radice dell'inverso della somma dei pesi
+    w_error = np.sqrt(1.0 / np.sum(weights))
+    return w_mean, w_error
 
 def weighted_std(errors):
     weights = 1.0 / (errors**2)
@@ -110,13 +113,13 @@ for current_name in names:
             current_file_results[f'{lbl}_sigma_err'] = perr[2]
 
         except Exception as e:
-            print(f"Fit failed for {lbl}: {e}")
+            print(f"Fit failed for {lbl} in {current_name}: {e}")
 
     if current_file_results:
         all_stats.append(current_file_results)
 
 # ---------------------------------------------------------
-# CALCOLO E PLOT CONCLUSIVI (Modificati per visibilità)
+# CALCOLO E PLOT CONCLUSIVI
 # ---------------------------------------------------------
 
 if all_stats:
@@ -127,15 +130,19 @@ if all_stats:
             vals = np.array([f[f'{axis}_{param}'] for f in all_stats])
             #print(f"{axis}_{param}: {vals}")
             errs = np.array([f[f'{axis}_{param}_err'] for f in all_stats])
-            #print(f"{axis}_{param}_err: {errs}")
-            final_values[f'{axis}_{param}'] = weighted_mean(vals, errs)
-            final_errors[f'{axis}_{param}'] = np.sqrt(weighted_std(errs))
+            
+            # Ottengo valore e incertezza finale
+            res_val, res_err = weighted_mean(vals, errs)
+            final_values[f'{axis}_{param}'] = res_val
+            final_values[f'{axis}_{param}_err'] = res_err
 
     print("\n--- RISULTATI FINALI (MEDIA PESATA) ---")
-    print(f"ASSE X: Media = {final_values['X_mu']:.6e} +/- {final_errors['X_mu']:.6e} [g], DevStd = {final_values['X_sigma']:.6e} +/- {final_errors['X_sigma']:.6e} [g]")
-    print(f"ASSE Y: Media = {final_values['Y_mu']:.6e} +/- {final_errors['Y_mu']:.6e} [g], DevStd = {final_values['Y_sigma']:.6e} +/- {final_errors['Y_sigma']:.6e} [g]")
+    print(f"ASSE X: Media = {final_values['X_mu']:.6f} \xb1 {final_values['X_mu_err']:.6e} g")
+    print(f"        DevStd = {final_values['X_sigma']:.6e} \xb1 {final_values['X_sigma_err']:.6e} g")
+    print(f"ASSE Y: Media = {final_values['Y_mu']:.6f} \xb1 {final_values['Y_mu_err']:.6e} g")
+    print(f"        DevStd = {final_values['Y_sigma']:.6e} \xb1 {final_values['Y_sigma_err']:.6e} g")
 
-    # FIGURA MEDIE: Subplot separati per X e Y per vedere le oscillazioni
+    # FIGURA MEDIE: Subplot separati per X e Y
     fig_mu, axs_mu = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
     fig_mu.suptitle("Andamento delle Medie ($\mu$) nei vari file")
     
