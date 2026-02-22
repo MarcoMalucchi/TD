@@ -269,7 +269,7 @@ plt.show()
 
 # ================= SALVATAGGIO OPZIONALE =================
 
-save_fig = True
+save_fig = False
 
 if save_fig:
     output_folder = os.path.join(path, "FRF")

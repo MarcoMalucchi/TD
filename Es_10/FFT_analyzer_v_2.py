@@ -9,7 +9,7 @@ from scipy.signal import find_peaks
 #==========
 
 # --- Configuration ---
-path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_bassa_ruotato/FFT/'
+path = '/home/marco/Desktop/Uni_anno3/TD/Es_10/acquisizioni/parte_1/parte_alta_y/FFT/'
 save_results = False  # Toggle for saving
 
 # 1. Scan for the FFT files
