@@ -15,7 +15,7 @@ E = 70e9          # Modulo Young Alluminio [Pa]
 rho = 2700        # Densità [kg/m3]
 
 # MASSE CONCENTRATE (Peso in Newton)
-P1 = 3.75           # Massa 1 (Top)
+P1 = 2.75           # Massa 1 (Top)
 P2 = 1.85           # Massa 2 (Mid)
 pos_m1 = 1.0 * L    # Posizione Massa 1
 pos_m2 = 0.502 * L  # Posizione Massa 2
@@ -63,7 +63,7 @@ freqs = np.sqrt(evals) / (2 * np.pi)
 # ==========================================
 # 2. ESTRAZIONE DATI MODE_IDX° MODO
 # ==========================================
-MODE_IDX = 2  # Indice 1 per il secondo modo
+MODE_IDX = 1  # Indice 1 per il secondo modo
 freq_modo = freqs[MODE_IDX]
 
 # Ricostruzione forma modale
