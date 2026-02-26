@@ -11,9 +11,9 @@ import math
 nspaz = 10          # numero di spazzate
 nper = 2           # numero periodi usati per la stima   
 npt = 8192          # numero MASSIMO di punti acquisiti
-nf = 500            # numero di frequenze nello sweep da f0 a f1   
-f0 = 1e3
-f1 = 8e3
+nf = 500           # numero di frequenze nello sweep da f0 a f1   
+f0 = 2e3
+f1 = 1.6e4
 flag_return = False  # A/R? o solo andata?
 #flag_show = True    # Visualizza i segnali nel tempo? (è uguale...)
 # vettore delle frequenze
@@ -27,12 +27,14 @@ ad2.vss = -5
 ad2.power(True)
 
 wavegen = tdwf.WaveGen(ad2.hdwf)
-wavegen.w1.ampl = 0.0015
-wavegen.w1.func = tdwf.funcTriangle 
+wavegen.w1.ampl = 0.3   #ampiezza 0.3V e offset 0.0V per oscillazioni in minimo positivo
+wavegen.w1.freq = 1e3
+wavegen.w1.func = tdwf.funcSine 
+wavegen.w1.offs = 0.0
 wavegen.w1.start()
 scope = tdwf.Scope(ad2.hdwf)
 scope.ch1.rng = 5
-scope.ch2.rng = 50
+scope.ch2.rng = 5
 
 
 # ==========================================================================
@@ -140,13 +142,14 @@ fig.align_ylabels((ax1, ax2))
 
 plt.show()
 
-Save = False
+Save = True
 
 if Save:
-    path = "/home/marco/Desktop/Uni_anno3/TD/Es_05/acquisizioni/task4_derivatore/"
-    name = "der_ris_triangle_OP77.txt"
+    path = "/home/marco/Desktop/Uni_anno3/TD/Es_11/acquisizioni/"
+    name = "spazzata_minimo_positivo.txt"
     np.savetxt(path+name, datas, delimiter=',', 
            header="#Freq[Hz], #Gain_mean[a.u.], #Gain_std[a.u.], #Phase_mean[rad], #Phase_std[rad]")
+    print(f'Dati salvati in {path+name}')
     ad2.close()
     
 else:
