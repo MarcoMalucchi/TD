@@ -23,7 +23,7 @@ wgen.w1.start()
 #   3. Configurazione oscilloscopio
 scope = tdwf.Scope(ad2.hdwf)
 scope.fs=1e5
-scope.npt=505
+scope.npt=101
 scope.ch1.rng = 50
 scope.ch2.rng = 50
 scope.ch1.avg=True
