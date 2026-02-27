@@ -1,6 +1,9 @@
 # labplot.py
+from pathlib import Path
 
-import os
+#TD root directory automatic detection
+TD_ROOT = Path(__file__).resolve().parents[1]
+
 
 def save_lab_figure(
     fig,
@@ -20,8 +23,14 @@ def save_lab_figure(
     mode : 'standard', 'presentation', or 'both'
     folder : save directory
     """
+    #=====================================
+    # BUILD FULL PATH RELATIVE TO TD ROOT.
+    #=====================================
 
-    os.makedirs(folder, exist_ok=True)
+    save_path = TD_ROOT / folder
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    #=====================================
 
     # allow single axis input
     if not isinstance(axes, (list, tuple)):
@@ -30,7 +39,7 @@ def save_lab_figure(
     # ---------------- STANDARD ----------------
     if mode in ["standard", "both"]:
         fig.savefig(
-            os.path.join(folder, f"{name}_standard.png"),
+            save_path/ f"{name}_standard.png",
             dpi=300
         )
 
@@ -54,6 +63,29 @@ def save_lab_figure(
         fig.set_size_inches(14, 8)
 
         fig.savefig(
-            os.path.join(folder, f"{name}_presentation.png"),
+            save_path / f"{name}_presentation.png",
             dpi=300
         )
+
+import json
+import numpy as np
+from datetime import datetime
+
+def save_experiment_metadata(fig, axes, name, data=None, metadata=None, folder="logbook"):
+
+    base = TD_ROOT / folder / name
+    base.mkdir(parents=True, exist_ok=True)
+
+    #save figure
+    save_lab_figure(fig, axes, name, mode="both", folder=f'{folder}/{name}')
+
+    #save data
+    if data is not None:
+        np.savetxt(base / 'data.txt', data)
+
+    # save metadata
+    if metadata is not None:
+        metadata['timestamp'] = datetime.now().isoformat()
+
+        with open(base / 'metadata.json', 'w') as f:
+            json.dumb(metadata, f, indent=2)
