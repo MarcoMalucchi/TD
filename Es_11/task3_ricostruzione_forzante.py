@@ -1,11 +1,19 @@
+import sys
+from pathlib import Path
+
+sys.path.append(
+    str(Path(__file__).resolve().parents[1])
+)
+
 import tdwf
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt 
 import numpy as np
 import time
+from utils.labplot import save_lab_figure
 
-
+path = '/home/marco/Desktop/Uni_anno3/TD/Es_11/'
 
 # -[Configurazione AD2]--------------------------------------------------------
 #   1. Connessiene con AD2 e selezione configurazione 
@@ -40,7 +48,7 @@ Ch2_1 = scope.ch2.vals
 # Ch1_2 = scope.ch1.vals
 # Ch2_2 = scope.ch2.vals
 
-fix, ax = plt.subplots(1,1, figsize=(10,6), dpi=100)
+fig, ax = plt.subplots(1,1, figsize=(10,6), dpi=100)
 
 #ax.plot(Ch2_1, Ch1_1, linestyle='-', marker='.', color="tab:blue", label = "Forzante primo periodo")
 
@@ -70,6 +78,9 @@ ax.set_xlabel(r'$V_{C}$ [V]')
 ax.set_ylabel(r'$V_{W1}$ [V]')
 ax.grid()
 ax.legend()
+
+save_lab_figure(fig, ax, "task3_ricostruzione_forzante", mode="both", folder=path + "logbook")
+
 plt.show()
 
 ad2.close()
