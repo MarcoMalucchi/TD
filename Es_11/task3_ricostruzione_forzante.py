@@ -25,7 +25,7 @@ ad2.power(True)
 wgen = tdwf.WaveGen(ad2.hdwf)
 wgen.w1.func = tdwf.funcTriangle
 wgen.w1.freq = 1e3
-wgen.w1.ampl = 2
+wgen.w1.ampl = 4
 #wgen.w1.offs = 1
 wgen.w1.start()
 #   3. Configurazione oscilloscopio
@@ -79,7 +79,7 @@ ax.set_ylabel(r'$V_{W1}$ [V]')
 ax.grid()
 ax.legend()
 
-save_lab_figure(fig, ax, "task3_ricostruzione_forzante", mode="both", folder=path + "logbook")
+save_lab_figure(fig, ax, "task3_ricostruzione_forzante_alta_ampiezza", mode="both", folder=path + "logbook")
 
 plt.show()
 
