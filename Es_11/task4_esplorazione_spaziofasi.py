@@ -1,11 +1,19 @@
+import sys
+from pathlib import Path
+
+sys.path.append(
+    str(Path(__file__).resolve().parents[1])
+)
+
 import tdwf
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt 
 import numpy as np
 import time
+from utils.labplot import save_lab_figure
 
-path = "/home/marco/Desktop/Uni_anno3/TD/Es_11/acquisizioni/"
+path = "/home/marco/Desktop/Uni_anno3/TD/Es_11/"
 
 # -[Configurazione Analog Discovery 2]-----------------------------------------
 #   1. Connessiene con AD2
@@ -15,7 +23,7 @@ ad2.vss = -5
 ad2.power(True)
 #   2. Configurazione generatore di funzioni
 wgen = tdwf.WaveGen(ad2.hdwf)
-wgen.w1.ampl = 5     #0.34, 0.35, 0.6 forma elegante che piace ad Alessia, la mettiamo nella presentazione così lei è felice yeeeiiiii
+wgen.w1.ampl = 4     #0.1 osillazione attorno ad un minimo; 0.33 vicini a superamento barriera, 0.34 inizio oscillazioni attorno ad entrambe i minimi, 0.6 allineamento delle cuspidi e relativo smussamento
 wgen.w1.freq = 700
 wgen.w1.offs = 0.0
 wgen.w1.func = tdwf.funcSquare
@@ -54,14 +62,20 @@ def on_close(event):
 def on_key(event):
     global flag_run
     global flag_acq
-    if event.key == 'x':  # => export su file
-        filename = input("Esporta dati su file: ")
-        data = np.column_stack((scope.time.vals, scope.ch1.vals, scope.ch2.vals))
-        if scope.npt > 8192:
-            info =  f"Acquisizione Analog Discovery 2 - Lunga durata\ntime\tch1\tch2"
-        else:
-            info =  f"Acquisizione Analog Discovery 2\nTimestamp {scope.time.t0}\ntime\tch1\tch2"
-        np.savetxt(filename, data, delimiter='\t', header=info)
+    if event.key == 'x':  # => export su file/salvataggio figure
+
+        name = input("Inserire nome per la figura: ")
+        save_lab_figure(fig, ax, name, mode="both", folder=path+'logbook')
+        print("Figura salvata")
+
+        # filename = input("Esporta dati su file: ")
+        # data = np.column_stack((scope.time.vals, scope.ch1.vals, scope.ch2.vals))
+        # if scope.npt > 8192:
+        #     info =  f"Acquisizione Analog Discovery 2 - Lunga durata\ntime\tch1\tch2"
+        # else:
+        #     info =  f"Acquisizione Analog Discovery 2\nTimestamp {scope.time.t0}\ntime\tch1\tch2"
+        # np.savetxt(filename, data, delimiter='\t', header=info)
+
     if event.key == ' ':  # => run/pausa misura
         flag_acq = not flag_acq
     if event.key == 'escape':  # => esci dalla misura
@@ -81,12 +95,12 @@ while flag_run:
     # Visualizzazione
     if flag_first:
         flag_first = False
-        hp1, = plt.plot(scope.ch1.vals, scope.ch2.vals, linestyle='-', marker='.', label="Ch1", color="tab:orange")
+        hp1, = plt.plot(scope.ch1.vals, scope.ch2.vals, linestyle='-', marker='.', label="Traiettoria", color="tab:orange")
         plt.legend()
         plt.grid(True)
         plt.xlabel(r'$V_C$ [V]', fontsize=15)
         plt.ylabel(r'$Ri_L$ [V]', fontsize=15)
-        plt.title("User interaction: x|space|escape")
+        plt.title("Traiettoria nello spazio delle fasi")
         plt.tight_layout()
         plt.show(block = False)
     else:
