@@ -143,3 +143,6 @@ def next_acquisition_name(
     n = max(numbers, default=0) + 1
 
     return f'{prefix}_{n:03d}'
+
+def float_to_str(value, digit=2):
+    return f'{value:.{digit}f}'.replace('.', '_')
