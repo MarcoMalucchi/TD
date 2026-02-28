@@ -52,7 +52,6 @@ time.sleep(0.1)
 scope.trig(True, level = 0.5, hist = 0.4, sour = tdwf.trigsrcCh1, cond=tdwf.trigslopeFall)
 
 
-
 #   4. Configurazione powersupply
 
 # -[Funzioni di gestione eventi]-----------------------------------------------
