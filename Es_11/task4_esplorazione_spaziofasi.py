@@ -13,8 +13,6 @@ import numpy as np
 import time
 from utils.labplot import save_lab_figure
 
-path = "/home/marco/Desktop/Uni_anno3/TD/Es_11/"
-
 # -[Configurazione Analog Discovery 2]-----------------------------------------
 #   1. Connessiene con AD2
 ad2 = tdwf.AD2()
@@ -64,7 +62,7 @@ def on_key(event):
     if event.key == 'x':  # => export su file/salvataggio figure
 
         name = input("Inserire nome per la figura: ")
-        save_lab_figure(fig, ax, name, mode="both", folder=path+'logbook')
+        save_lab_figure(fig, ax, name, mode="both", folder_standard='logbook', folder_presentation='presentazione')
         print("Figura salvata")
 
         # filename = input("Esporta dati su file: ")

@@ -32,34 +32,31 @@ def save_lab_figure(
     if not isinstance(axes, (list, tuple)):
         axes = [axes]
 
-    # ---------------- STANDARD ----------------
+ # ---------------- STANDARD ----------------
     if mode in ["standard", "both"]:
 
+        fig_std = copy.deepcopy(fig)
         save_path = resolve_save_path(folder_standard)
 
-        fig.set_size_inches(10, 6)
+        fig_std.set_size_inches(10, 6)
 
-        fig.savefig(
-            save_path/ f"{name}_standard.png",
+        fig_std.savefig(
+            save_path / f"{name}_standard.png",
             dpi=300
         )
+
 
     # ---------------- PRESENTATION ----------------
     if mode in ["presentation", "both"]:
 
+        fig_pres = copy.deepcopy(fig)
         save_pres = resolve_save_path(folder_presentation)
 
-        fig_pres = copy.deepcopy(fig)
-
-        axes_pres = fig_pres.axes
-
-        for ax in axes_pres:
-            ax.tick_params(
-                axis='both',
-                labelsize=16,
-                width=2,
-                length=8
-            )
+        for ax in fig_pres.axes:
+            ax.tick_params(axis='both',
+                        labelsize=16,
+                        width=2,
+                        length=8)
 
             ax.xaxis.label.set_size(18)
             ax.yaxis.label.set_size(18)
@@ -70,7 +67,7 @@ def save_lab_figure(
         fig_pres.set_size_inches(14, 8)
 
         fig_pres.savefig(
-            save_path / f"{name}_presentation.png",
+            save_pres / f"{name}_presentation.png",
             dpi=300
         )
 
@@ -81,34 +78,43 @@ from datetime import datetime
 def save_experiment_metadata(
         fig=None,
         axes=None,
-        name="exp",
+        prefix="exp",
         data=None,
         metadata=None):
 
-    base = get_script_dir()
+    #base = get_script_dir()
+
+    name = next_acquisition_name(prefix=prefix)
 
     #save figure
     if fig is not None:
-        save_lab_figure(fig, axes, name, mode="both", folder='figures')
+        save_lab_figure(fig, axes, name, mode="both", folder_standard='logbook', folder_presentation='presentazione')
 
     #save data
     if data is not None:
-        np.savetxt(base / 'acquisizioni' / f'{name}.txt', data)
+        data_path = resolve_save_path('acquisizioni')
+
+        np.savetxt(data_path / f'{name}.txt', data)
 
     # save metadata
     if metadata is not None:
+        metadata_path = resolve_save_path('logbook')
         metadata['timestamp'] = datetime.now().isoformat()
 
-        with open(base / 'logbook' / f'{name}.json', 'w') as f:
+        with open(metadata_path / f'{name}.json', 'w') as f:
             json.dump(metadata, f, indent=2)
 
+import inspect
+
 def get_script_dir():
-    from pathlib import Path
-    import inspect
 
-    caller_file = inspect.stack()[2].filename
+    this_file = Path(__file__).resolve()
 
-    return Path(caller_file).resolve().parent
+    for frame in inspect.stack():
+        filename = Path(frame.filename).resolve()
+
+        if filename != this_file and 'utils' not in str(filename):
+            return filename.parent
 
 def resolve_save_path(folder):
 
@@ -120,11 +126,11 @@ def resolve_save_path(folder):
 
 def next_acquisition_name(
         folder="acquisizioni",
-        prefix=None,
+        prefix='exp',
         ):
     
     path = resolve_save_path(folder)
-    path.mkdir(exist_ok=True)
+    #path.mkdir(exist_ok=True)
     existing = list(path.glob(f'{prefix}_*'))
     numbers=[]
 
