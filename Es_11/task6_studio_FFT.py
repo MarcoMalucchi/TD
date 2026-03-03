@@ -49,7 +49,7 @@ ad2.vss = -5
 ad2.power(True)
 
 wavegen = tdwf.WaveGen(ad2.hdwf)
-wavegen.w1.ampl = 0.8
+wavegen.w1.ampl = 0.6
 wavegen.w1.func = tdwf.funcSine
 wavegen.w1.start()
 scope = tdwf.Scope(ad2.hdwf)
@@ -117,9 +117,9 @@ fig.colorbar(pcm, ax=ax, label="ASD [V/√Hz]")
 plt.title(f"Color plot della FFT di Vc (A = {wavegen.w1.ampl} V)")
 plt.show()
 
-save_lab_figure(fig, ax, f"task6_colorplot_FFT_{float_to_str(wavegen.w1.ampl, 3)}")
+#save_lab_figure(fig, ax, f"task6_colorplot_FFT_{float_to_str(wavegen.w1.ampl, 3)}")
 
-print('immagine salvata')
+#print('immagine salvata')
 
 ad2.close()
 

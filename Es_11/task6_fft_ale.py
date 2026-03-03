@@ -147,4 +147,4 @@ ax.set_title(f"Color plot della FFT di Vc (A = {wavegen.w1.ampl} V)", fontweight
 
 plt.show()
 
-save_lab_figure(fig, ax, f"task6_colorplot_FFT_{float_to_str(wavegen.w1.ampl, 3)}")
+#save_lab_figure(fig, ax, f"task6_colorplot_FFT_{float_to_str(wavegen.w1.ampl, 3)}")
