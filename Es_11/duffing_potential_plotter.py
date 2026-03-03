@@ -19,7 +19,7 @@ def duffing_potential(x, alpha, beta):
 # -----------------------------
 # Parameters (EDIT THESE)
 # -----------------------------
-alpha = 1.0   # try +1.0 for single-well
+alpha = -1.0   # try +1.0 for single-well
 beta = 1.0     # must be > 0 for stability
 
 # -----------------------------
@@ -32,7 +32,7 @@ V = duffing_potential(x, alpha, beta)
 # Plot
 # -----------------------------
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(x, V)
+ax.plot(x, V, color='red')
 ax.axhline(0, linestyle='--', color='black')
 ax.axvline(0, linestyle='--', color='black')
 
@@ -44,7 +44,7 @@ if alpha < 0 and beta > 0:
 elif alpha > 0:
     ax.scatter([0], [0])
 
-plt.title(f"Duffing Potential \n alpha = {alpha}, beta = {beta}")
+plt.title(f"Duffing Potential: alpha = {alpha}, beta = {beta}")
 ax.set_xlabel("x")
 ax.set_ylabel("V(x)")
 ax.grid(True)
