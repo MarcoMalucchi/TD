@@ -49,7 +49,7 @@ ad2.vss = -5
 ad2.power(True)
 
 wavegen = tdwf.WaveGen(ad2.hdwf)
-wavegen.w1.freq = 7300
+wavegen.w1.freq = 10000
 wavegen.w1.func = tdwf.funcSine
 wavegen.w1.start()
 scope = tdwf.Scope(ad2.hdwf)
@@ -106,20 +106,39 @@ for ii in range(len(Av)):  # Ciclo frequenze
 
 import matplotlib.colors as colors
 
-fig, ax = plt.subplots(figsize=(10,6))
-pcm = ax.pcolormesh(freq, Av, data, shading='auto', cmap='inferno')
-ax.set_xscale('log')
-#ax.set_yscale('log')
-ax.set_xlabel("Spectral frequency [Hz]")
-ax.set_ylabel("Driving amplitude [V]")
-ax.set_xlim(10, 1e6)
-fig.colorbar(pcm, ax=ax, label="ASD [V/√Hz]")
-plt.title(f"Color plot della FFT di Vc (w = {wavegen.w1.freq} Hz)")
+plt.rcParams.update({
+    "font.size": 18,
+    "font.weight": "bold",
+    "axes.labelweight": "bold",
+    "axes.titleweight": "bold",
+    "axes.titlesize": 20,
+    "axes.labelsize": 18,
+    "xtick.labelsize": 16,
+    "ytick.labelsize": 16,
+})
+
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# === ASSI CORRETTI: x = Av (ampiezza), y = freq (frequenza spettrale) ===
+pcm = ax.pcolormesh(Av, freq, data.T, shading='auto', cmap='inferno')
+
+ax.set_yscale('log')                 # la frequenza FFT ha senso in log
+ax.set_xlabel("Driving amplitude [V]", fontweight="bold")
+ax.set_ylabel("Spectral frequency [Hz]", fontweight="bold")
+ax.set_ylim(10, 5*1e5)
+
+# tick più visibili e in grassetto
+ax.tick_params(axis='both', which='both', direction='in', length=8, width=2)
+for label in ax.get_xticklabels() + ax.get_yticklabels():
+    label.set_fontweight('bold')
+
+cbar = fig.colorbar(pcm, ax=ax)
+cbar.set_label("ASD [V/√Hz]", fontweight="bold")
+for t in cbar.ax.get_yticklabels():
+    t.set_fontweight('bold')
+
+ax.set_title(f"Color plot della FFT di Vc (w = {wavegen.w1.freq} Hz)", fontweight="bold")
+
 plt.show()
 
 save_lab_figure(fig, ax, f"task6_colorplot_ampl_{float_to_str(wavegen.w1.freq, 3)}")
-
-print('immagine salvata')
-
-ad2.close()
-
