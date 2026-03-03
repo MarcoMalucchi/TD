@@ -97,7 +97,7 @@ while flag_run:
         plt.grid(True)
         plt.xlabel(r'$V_C$ [V]', fontsize=15)
         plt.ylabel(r'$Ri_L$ [V]', fontsize=15)
-        plt.title("Traiettoria nello spazio delle fasi")
+        plt.title(f"Traiettoria nello spazio delle fasi {wgen.w1.freq} Hz")
         plt.tight_layout()
         plt.show(block = False)
     else:
