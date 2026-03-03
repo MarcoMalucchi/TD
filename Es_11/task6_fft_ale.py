@@ -35,11 +35,11 @@ def osc_sampling_rate(r):
 #  Parametri dello script
 #nper = 10           # numero periodi usati per la stima   
 #npt = 16384          # numero MASSIMO di punti acquisiti
-nA = 500            # numero di frequenze nello sweep da f0 a f1   
-A0 = 0.1
-A1 = 1.5
+nf = 500            # numero di frequenze nello sweep da f0 a f1   
+f0 = 1e3
+f1 = 1e4
 # vettore delle frequenze
-Av = np.linspace(A0, A1, nA)
+fv = np.logspace(np.log10(f0), np.log10(f1), nf)
 
 # ==========================================================================
 #  Configurazione base AD2 (più parametri impostati dopo)
@@ -49,7 +49,7 @@ ad2.vss = -5
 ad2.power(True)
 
 wavegen = tdwf.WaveGen(ad2.hdwf)
-wavegen.w1.freq = 7300
+wavegen.w1.ampl = 0.6
 wavegen.w1.func = tdwf.funcSine
 wavegen.w1.start()
 scope = tdwf.Scope(ad2.hdwf)
@@ -65,17 +65,17 @@ scope.ch2.avg = True
 # Ciclo misura
 
 nfft = scope.npt // 2 + 1
-data = np.zeros((len(Av), nfft))
+data = np.zeros((len(fv), nfft))
 
 scope.sample()
 
 freq, _, _ = get_fft(scope.time.vals, scope.ch1.vals, scope.fs)
 
-for ii in range(len(Av)):  # Ciclo frequenze
+for ii in range(len(fv)):  # Ciclo frequenze
     # if ii % 25 == 0:
     #     print(f"{round((ii/len(fv))*100)}%")
     # Frequenza attuale
-    A = Av[ii]
+    ff = fv[ii]
     # [3b] stima parametri di sampling
     #
     #  COSA VOGLIO: misurare nper con al massimo npt punti acquisizione
@@ -95,31 +95,56 @@ for ii in range(len(Av)):  # Ciclo frequenze
 
     #  Ribadiamo il trigger... 
     #scope.trig(True, hist = 0.01)
-    wavegen.w1.ampl = A 
+    wavegen.w1.freq = ff 
     # [3c] Campionamento e analisi risultati
     scope.sample()
 
     _, _, PSD = get_fft(scope.time.vals, scope.ch1.vals, scope.fs)
-    data[ii, :,] = np.sqrt(PSD)
+    data[ii, :] = 10 * np.log10(PSD)
 
 # [4] Visualizzazione risultati
 
 import matplotlib.colors as colors
 
-fig, ax = plt.subplots(figsize=(10,6))
-pcm = ax.pcolormesh(freq, Av, data, shading='auto', cmap='inferno')
+plt.rcParams.update({
+    "font.size": 18,
+    "font.weight": "bold",
+    "axes.labelweight": "bold",
+    "axes.titleweight": "bold",
+    "axes.titlesize": 20,
+    "axes.labelsize": 18,
+    "xtick.labelsize": 16,
+    "ytick.labelsize": 16,
+})
+
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# === ASSI CORRETTI: x = fv (frequenza di forzante, parametro scansionato), y = freq (frequenza spettrale) ===
+pcm = ax.pcolormesh(fv, freq, data.T, shading='auto', cmap='inferno')
+
+# entrambe sono frequenze -> entrambe in log ha senso
 ax.set_xscale('log')
-#ax.set_yscale('log')
-ax.set_xlabel("Spectral frequency [Hz]")
-ax.set_ylabel("Driving amplitude [V]")
-ax.set_xlim(10, 1e6)
-fig.colorbar(pcm, ax=ax, label="ASD [V/√Hz]")
-plt.title(f"Color plot della FFT di Vc (w = {wavegen.w1.freq} Hz)")
+ax.set_yscale('log')
+
+ax.set_xlabel("Driving frequency [Hz]", fontweight="bold")
+ax.set_ylabel("Spectral frequency [Hz]", fontweight="bold")
+
+# limiti coerenti con quelli che avevi (ma ora applicati all'asse corretto)
+ax.set_xlim(f0, f1)
+ax.set_ylim(f0, 5*1e5)  # oppure freq.min(), freq.max() se preferisci
+
+# tick più visibili e in grassetto
+ax.tick_params(axis='both', which='both', direction='in', length=8, width=2)
+for label in ax.get_xticklabels() + ax.get_yticklabels():
+    label.set_fontweight('bold')
+
+cbar = fig.colorbar(pcm, ax=ax)
+cbar.set_label("[dB]", fontweight="bold")
+for t in cbar.ax.get_yticklabels():
+    t.set_fontweight('bold')
+
+ax.set_title(f"Color plot della FFT di Vc (A = {wavegen.w1.ampl} V)", fontweight="bold")
+
 plt.show()
 
-save_lab_figure(fig, ax, f"task6_colorplot_ampl_{float_to_str(wavegen.w1.freq, 3)}")
-
-print('immagine salvata')
-
-ad2.close()
-
+save_lab_figure(fig, ax, f"task6_colorplot_FFT_{float_to_str(wavegen.w1.ampl, 3)}")

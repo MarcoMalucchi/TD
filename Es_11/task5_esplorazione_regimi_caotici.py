@@ -23,7 +23,7 @@ ad2.vss = -5
 ad2.power(True)
 #   2. Configurazione generatore di funzioni
 wgen = tdwf.WaveGen(ad2.hdwf)
-wgen.w1.ampl = 0.7     #0.34, 0.35, 0.6 forma elegante che piace ad Alessia, la mettiamo nella presentazione così lei è felice yeeeiiiii
+wgen.w1.ampl = 0.6     #0.34, 0.35, 0.6 forma elegante che piace ad Alessia, la mettiamo nella presentazione così lei è felice yeeeiiiii
 wgen.w1.freq = 7300
 wgen.w1.offs = 0.0
 wgen.w1.func = tdwf.funcSine
@@ -69,7 +69,7 @@ def on_key(event):
         fig._suptitle.set_text(f'Risposta circuito con forzante sinusoidale ' f'{wgen.w1.ampl} V, {wgen.w1.freq} Hz')
     if event.key == 'x':  # => salva immagine
 
-        name = f'task5_ampl_{float_to_str(wgen.w1.ampl, 3)}'
+        name = f'task5_ampl_{float_to_str(wgen.w1.ampl, 3)}_freq_{float_to_str(wgen.w1.freq,3)}'
         save_lab_figure(fig, [ax1, ax2], name, mode="both", folder_standard='logbook', folder_presentation='presentazione')
         print(f"Figura salvata, nome: {name}")
 
