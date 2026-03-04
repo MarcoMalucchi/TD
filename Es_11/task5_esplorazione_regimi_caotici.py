@@ -23,7 +23,7 @@ ad2.vss = -5
 ad2.power(True)
 #   2. Configurazione generatore di funzioni
 wgen = tdwf.WaveGen(ad2.hdwf)
-wgen.w1.ampl = 0.6     #0.34, 0.35, 0.6 forma elegante che piace ad Alessia, la mettiamo nella presentazione così lei è felice yeeeiiiii
+wgen.w1.ampl = 0.9     #0.34, 0.35, 0.6 forma elegante che piace ad Alessia, la mettiamo nella presentazione così lei è felice yeeeiiiii
 wgen.w1.freq = 7300
 wgen.w1.offs = 0.0
 wgen.w1.func = tdwf.funcSine
@@ -43,7 +43,7 @@ wgen.w1.start()
 #   3. Configurazione oscilloscopio
 scope = tdwf.Scope(ad2.hdwf)
 scope.fs=1e6
-scope.npt=512
+scope.npt=8192
 scope.ch1.rng = 50
 scope.ch2.rng = 50
 scope.ch1.avg=True

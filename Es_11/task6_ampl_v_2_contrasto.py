@@ -16,48 +16,40 @@ from utils.labplot import save_lab_figure, float_to_str
 plt.close('all')
 
 # ==========================================================================
-#  FFT + PSD "come il tuo", ma con finestra Hann per renderlo più pulito
-#  Ritorna: fft_freqs [Hz], PSD [V^2/Hz]
+#  FFT + PSD con finestra Hann (come nel codice precedente)
 # ==========================================================================
 def get_fft_psd(signal, fs):
     n = len(signal)
 
-    # detrend (rimuovi DC)
     sig = signal - np.mean(signal)
 
-    # finestra Hann (riduce leakage -> bande più "pulite" nel colorplot)
     w = np.hanning(n)
     sigw = sig * w
 
-    # FFT one-sided
     fft_values = np.fft.rfft(sigw)
     fft_freqs = np.fft.rfftfreq(n, d=1/fs)
 
-    # Ampiezza "two-sided->one-sided" (attenzione: con finestra serve correzione di guadagno)
-    # Coherent gain della Hann: mean(w)
     cg = np.mean(w)
     amplitude = (2.0 / n) * np.abs(fft_values) / (cg + 1e-30)
 
-    # PSD da ampiezza: PSD ≈ A^2 / (2*df)  (stessa idea che avevi tu)
     df = fs / n
     PSD = (amplitude**2) / (2.0 * df)
 
     return fft_freqs, PSD
 
 # ==========================================================================
-#  Parametri sweep
+#  Parametri sweep in ampiezza
 # ==========================================================================
-nf = 500
-f0 = 1e3
-f1 = 1e4
-fv = np.logspace(np.log10(f0), np.log10(f1), nf)
+nA = 500
+A0 = 0.1
+A1 = 1.5
+Av = np.linspace(A0, A1, nA)
 
-A_DRIVE = 2
+F_DRIVE = 7300       # frequenza fissa
 FS = 1e6
 NPT = 16384
 SETTLE_S = 0.03
 
-# Taglio dello spettro (fondamentale per avere contrasto buono)
 FMIN_PLOT = 80.0
 FMAX_PLOT = 2.0e4
 
@@ -70,7 +62,7 @@ ad2.vss = -5
 ad2.power(True)
 
 wavegen = tdwf.WaveGen(ad2.hdwf)
-wavegen.w1.ampl = A_DRIVE
+wavegen.w1.freq = F_DRIVE
 wavegen.w1.func = tdwf.funcSine
 wavegen.w1.start()
 
@@ -92,25 +84,22 @@ mask = (freq >= FMIN_PLOT) & (freq <= FMAX_PLOT)
 freq_plot = freq[mask]
 nfft = len(freq_plot)
 
-data_db = np.zeros((len(fv), nfft), dtype=float)
+data_db = np.zeros((len(Av), nfft), dtype=float)
 
-eps = 1e-24  # evita log(0)
+eps = 1e-24
 
-for ii, ff in enumerate(tqdm(fv, desc="Sweep in frequenza")):
-    wavegen.w1.freq = float(ff)
+for ii, A in enumerate(tqdm(Av, desc="Sweep in ampiezza")):
+    wavegen.w1.ampl = float(A)
     time.sleep(SETTLE_S)
     scope.sample()
 
     _, PSD = get_fft_psd(scope.ch1.vals, scope.fs)
 
-    # Passaggio a dB "tipo figura":
-    # ASD = sqrt(PSD) [V/sqrt(Hz)]  -> dB re 1 V/sqrt(Hz): 20*log10(ASD)
-    # Numericamente equivale a 10*log10(PSD) (ma l’etichetta cambia!)
     ASD = np.sqrt(PSD[mask])
     data_db[ii, :] = 20.0 * np.log10(ASD + eps)
 
 # ==========================================================================
-#  Visualizzazione: CONTRASTO alto (percentili) + colormap jet
+#  Visualizzazione (identica logica del codice precedente)
 # ==========================================================================
 plt.rcParams.update({
     "font.size": 18,
@@ -123,32 +112,34 @@ plt.rcParams.update({
     "ytick.labelsize": 16,
 })
 
-# Percentili = “auto-contrasto” robusto (evita che 2 righe saturino tutto)
 vmin = np.percentile(data_db, 5)
 vmax = np.percentile(data_db, 99.5)
 
 fig, ax = plt.subplots(figsize=(11, 7))
 
 pcm = ax.pcolormesh(
-    fv, freq_plot, data_db.T,
+    Av,
+    freq_plot,
+    data_db.T,
     shading="auto",
     cmap="jet",
-    vmin=vmin, vmax=vmax
+    vmin=vmin,
+    vmax=vmax
 )
 
-ax.set_xscale("log")
 ax.set_yscale("log")
 
-ax.set_xlabel("Driving frequency [Hz]", fontweight="bold")
+ax.set_xlabel("Driving amplitude [V]", fontweight="bold")
 ax.set_ylabel("Spectral frequency [Hz]", fontweight="bold")
 
-ax.set_xlim(f0, f1)
+ax.set_xlim(A0, A1)
 ax.set_ylim(freq_plot[0], freq_plot[-1])
 
 ax.tick_params(axis="both", which="major",
                direction="out", length=10, width=2)
 ax.tick_params(axis="both", which="minor",
                direction="out", length=6, width=1.5)
+
 for sp in ax.spines.values():
     sp.set_linewidth(2)
 for lab in ax.get_xticklabels() + ax.get_yticklabels():
@@ -159,12 +150,15 @@ cbar.set_label("ASD [dB]", fontweight="bold")
 for t in cbar.ax.get_yticklabels():
     t.set_fontweight("bold")
 
-ax.set_title(f"Color plot della FFT di Vc (A = {A_DRIVE} V)", fontweight="bold")
+ax.set_title(f"Color plot della FFT di Vc (f = {F_DRIVE} Hz)",
+             fontweight="bold")
 
 plt.tight_layout()
 plt.show()
 
-save_lab_figure(fig, ax, f"task6_colorplot_FFT_{float_to_str(A_DRIVE, 3)}")
+save_lab_figure(fig, ax,
+                f"task6_colorplot_ampl_{float_to_str(F_DRIVE, 3)}")
+
 print("immagine salvata")
 
 ad2.close()
