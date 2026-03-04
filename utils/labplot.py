@@ -66,6 +66,9 @@ def save_lab_figure(
 
         fig_pres.set_size_inches(14, 8)
 
+        fig.title.set_size(18)
+        fig.suptitle.set_size(18)
+
         fig_pres.savefig(
             save_pres / f"{name}_presentation.png",
             dpi=300
@@ -108,18 +111,33 @@ import inspect
 
 def get_script_dir():
 
-    this_file = Path(__file__).resolve()
+    try:
+        this_file = Path(__file__).resolve()
+    except NameError:
+        return None
 
     for frame in inspect.stack():
         filename = Path(frame.filename).resolve()
 
         if filename != this_file and 'utils' not in str(filename):
+            # If this is a temp Jupyter file
+            if "ipykernel" in str(filename):
+                return None
             return filename.parent
+
+    return None
 
 def resolve_save_path(folder):
 
     script_dir = get_script_dir()
-    save_path = script_dir / folder
+
+    # If running inside Jupyter (ipykernel temp file)
+    if script_dir is None or "ipykernel" in str(script_dir):
+        base_dir = Path.cwd()
+    else:
+        base_dir = script_dir
+
+    save_path = base_dir / folder
     save_path.mkdir(parents=True, exist_ok=True)
 
     return save_path
