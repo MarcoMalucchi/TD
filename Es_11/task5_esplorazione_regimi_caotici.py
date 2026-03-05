@@ -23,8 +23,8 @@ ad2.vss = -5
 ad2.power(True)
 #   2. Configurazione generatore di funzioni
 wgen = tdwf.WaveGen(ad2.hdwf)
-wgen.w1.ampl = 0.9     #0.34, 0.35, 0.6 forma elegante che piace ad Alessia, la mettiamo nella presentazione così lei è felice yeeeiiiii
-wgen.w1.freq = 7300
+wgen.w1.ampl = 0.65     #0.34, 0.35, 0.6 forma elegante che piace ad Alessia, la mettiamo nella presentazione così lei è felice yeeeiiiii
+wgen.w1.freq = 5300
 wgen.w1.offs = 0.0
 wgen.w1.func = tdwf.funcSine
 wgen.w1.duty = 50
