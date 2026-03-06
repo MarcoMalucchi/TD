@@ -20,7 +20,7 @@ f0 = 1e3
 f1 = 10e3
 fv = np.logspace(np.log10(f0), np.log10(f1), nf)
 
-A_DRIVE = 0.8       # Prova a variare tra 0.5 e 5V per vedere le biforcazioni
+A_DRIVE = 0.6       # Prova a variare tra 0.5 e 5V per vedere le biforcazioni
 FS = 1e6            # 1 MHz
 NPT = 16384         # Abbastanza punti per catturare molti cicli
 SETTLE_S = 0.04     # Tempo di assestamento
@@ -102,7 +102,7 @@ finally:
 if len(all_peaks) == 0:
     print("ERRORE: Nessun dato raccolto. Controlla i collegamenti dello Scope.")
 else:
-    plt.style.use('dark_background')
+    plt.style.use('default')
     fig, ax = plt.subplots(figsize=(12, 7))
     
     # Plot con punti molto piccoli (marker=',') e trasparenza (alpha)
