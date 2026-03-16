@@ -1,0 +1,9 @@
+{
+  "w1_amplitude": 1.5,
+  "w1_frequency": 1000.0,
+  "w1_offset": 1.5,
+  "w1_duty": 50.0,
+  "sampling_rate": 100000.0,
+  "points": 4096,
+  "timestamp": "2026-03-16T23:53:16.823377"
+}

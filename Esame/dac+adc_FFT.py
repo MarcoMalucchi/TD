@@ -143,7 +143,9 @@ def on_key(event):
         req_points = True
 
     if event.key == 'x':
-        name = f'esame_ampl1_{float_to_str(wgen.w1.ampl,3)}_freq1_{float_to_str(wgen.w1.freq,3)}'
+
+
+        name = f'esame_FFT_ampl1_{float_to_str(wgen.w1.ampl,3)}_freq1_{float_to_str(wgen.w1.freq,3)}'
 
         metadata = {
             "w1_amplitude": wgen.w1.ampl,
@@ -162,15 +164,37 @@ def on_key(event):
 
             name += f'_ampl2_{float_to_str(wgen.w2.ampl,3)}_freq2_{float_to_str(wgen.w2.freq,3)}'
 
+        # ---- TIME DOMAIN DATA ----
+        time_data = np.column_stack([
+            scope.time.vals,
+            scope.ch1.vals,
+            scope.ch2.vals
+        ])
+
+        # ---- FFT DATA ----
+        fft_data = np.column_stack([
+            f1,
+            PSD1,
+            f2,
+            PSD2
+        ])
+
         save_experiment_metadata(
             fig=fig,
             axes=[ax1],
-            name=name,
-            data=np.column_stack([scope.time.vals,
-                                  scope.ch1.vals,
-                                  scope.ch2.vals]),
-            header='time\tch1\tch2',
+            name=name + "_time",
+            data=time_data,
+            header="time\tch1\tch2",
             metadata=metadata
+        )
+
+        save_experiment_metadata(
+            fig=fig,
+            axes=[ax2],
+            name=name + "_fft",
+            data=fft_data,
+            header="freq1\tPSD1\tfreq2\tPSD2",
+            metadata=None
         )
 
         print("Dati e immagine salvati.")
@@ -208,12 +232,21 @@ def limits_with_margin(data, margin=0.05):
 
     return dmin - margin*span, dmax + margin*span
 
+def get_fft(t, signal, fs=200):
+    n = len(t)
+    sig_detrended = signal - np.mean(signal) # Remove DC offset
+    fft_values = np.fft.rfft(sig_detrended, n=scope.npt)
+    fft_freqs = np.fft.rfftfreq(n, d=1/fs)
+    amplitude = np.abs(fft_values) * (2.0 / n)
+    df = fs/n
+    PSD = (amplitude**2)/(df*2)
+    return fft_freqs, amplitude, PSD
 
 ###################
 # CICLO DI MISURA
 ###################
 
-fig, ax1 = plt.subplots(figsize=(12, 6))
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
 
 fig.canvas.mpl_connect("close_event", on_close)
 fig.canvas.mpl_connect("key_press_event", on_key)
@@ -309,21 +342,20 @@ try:
         if flag_acq:
             scope.sample()
 
+            f1, _, PSD1 = get_fft(scope.time.vals, scope.ch1.vals, fs=scope.fs)
+            f2, _, PSD2 = get_fft(scope.time.vals, scope.ch2.vals, fs=scope.fs)
+
         # ---- PLOT ----
 
         if flag_first:
 
             flag_first = False
 
-            hp1, = ax1.plot(scope.time.vals,
-                            scope.ch1.vals,
-                            label="Ch1",
-                            color="tab:orange")
+            hp1, = ax1.plot(scope.time.vals, scope.ch1.vals, label="Ch1", color="tab:orange")
+            hp2, = ax1.plot(scope.time.vals, scope.ch2.vals, label="Ch2", color="tab:blue")
 
-            hp2, = ax1.plot(scope.time.vals,
-                            scope.ch2.vals,
-                            label="Ch2",
-                            color="tab:blue")
+            hp3, = ax2.plot(f1[1:], PSD1[1:], label="Ch1", color="tab:orange")
+            hp4, = ax2.plot(f2[1:], PSD2[1:], label="Ch2", color="tab:blue")
 
             ax1.legend(loc="upper right")
             ax1.grid(True)
@@ -331,11 +363,24 @@ try:
             ax1.set_xlabel("time [s]", fontsize=15)
             ax1.set_ylabel("$V_C$ [V]", fontsize=15)
 
+            ax2.set_xscale("log")
+            ax2.set_yscale("log")
+
+            ax2.legend(loc="upper right")
+            ax2.grid(True)
+
+            ax2.set_xlabel("freq [Hz]", fontsize=15)
+            ax2.set_ylabel("PSD [V$^2$/Hz]", fontsize=15)
+
             title = fig.suptitle(get_title())
 
             ax1.set_xlim(*limits_with_margin(scope.time.vals))
             ydata = np.concatenate([scope.ch1.vals, scope.ch2.vals])
             ax1.set_ylim(*limits_with_margin(ydata))
+
+            ax2.set_xlim(*limits_with_margin(f1))
+            ydata = np.concatenate([PSD1, PSD2])
+            ax2.set_ylim(*limits_with_margin(ydata))
 
             plt.show(block=False)
 
@@ -347,11 +392,21 @@ try:
             hp2.set_xdata(scope.time.vals)
             hp2.set_ydata(scope.ch2.vals)
 
+            hp3.set_xdata(f1)
+            hp3.set_ydata(PSD1)
+
+            hp4.set_xdata(f2)
+            hp4.set_ydata(PSD2)
+
             if flag_rescale or flag_freq or flag_fs or flag_points:
 
                 ax1.set_xlim(*limits_with_margin(scope.time.vals))
                 ydata = np.concatenate([scope.ch1.vals, scope.ch2.vals])
                 ax1.set_ylim(*limits_with_margin(ydata))
+
+                ax2.set_xlim(*limits_with_margin(f1))
+                ydata = np.concatenate([PSD1, PSD2])
+                ax2.set_ylim(*limits_with_margin(ydata))
 
                 flag_rescale = False
                 flag_freq = False
