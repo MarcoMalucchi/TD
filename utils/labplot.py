@@ -66,8 +66,7 @@ def save_lab_figure(
 
         fig_pres.set_size_inches(14, 8)
 
-        fig.title.set_size(18)
-        fig.suptitle.set_size(18)
+        fig_pres._suptitle.set_fontsize(18)
 
         fig_pres.savefig(
             save_pres / f"{name}_presentation.png",
@@ -81,13 +80,15 @@ from datetime import datetime
 def save_experiment_metadata(
         fig=None,
         axes=None,
-        prefix="exp",
+        prefix=None,
+        name=None,
         data=None,
+        header=None,
         metadata=None):
 
     #base = get_script_dir()
-
-    name = next_acquisition_name(prefix=prefix)
+    if name == None:
+        name = next_acquisition_name(prefix=prefix)
 
     #save figure
     if fig is not None:
@@ -97,7 +98,7 @@ def save_experiment_metadata(
     if data is not None:
         data_path = resolve_save_path('acquisizioni')
 
-        np.savetxt(data_path / f'{name}.txt', data)
+        np.savetxt(data_path / f'{name}.txt', data, header=header, delimiter='\t')
 
     # save metadata
     if metadata is not None:

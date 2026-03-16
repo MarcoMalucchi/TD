@@ -1,0 +1,212 @@
+
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{caption}[numbered]
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{siunitx}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{physics}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, urlcolor=blue, linkcolor=blue}
+
+% --- Title ---
+\title{Derivatore e Integratore (S05)}
+\subtitle{Analisi teorica, simulazioni e risultati sperimentali}
+\author{TD - Tecnologie Digitali}
+\institute{OpAmp MCP601 -- Laboratorio}
+\date{\today}
+
+\begin{document}
+
+% --- Title page ---
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% --- Outline ---
+\begin{frame}{Outline}
+\tableofcontents
+\end{frame}
+
+\section{Obiettivi e schema dell'esercitazione}
+\begin{frame}{Obiettivi S05}
+\begin{itemize}
+  \item Ricavare e discutere la funzione di trasferimento $H(\omega)$ di \textbf{integratore} e \textbf{derivatore}.
+  \item Stimare il \textbf{range di frequenze} in cui i circuiti operano come integratore/derivatore ideali.
+  \item Valutare l'effetto dell'\textbf{offset} $V_{\text{off}}$ sull'uscita e il rischio di \textbf{saturazione}.
+  \item Misurare la \textbf{risposta in frequenza} e confrontarla con la teoria (diagrammi di Bode).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Scheda: integratore e derivatore di Miller}
+\begin{columns}[T,onlytextwidth]
+\column{0.5\textwidth}
+\begin{itemize}
+  \item Integratore: rete $RC$ in \textit{feedback}.
+  \item Derivatore: rete $RC$ in \textit{ingresso}.
+  \item Resistenze di regolazione: $R_{\text{reg}}$ (stabilizza, limita guadagno DC).
+\end{itemize}
+\column{0.5\textwidth}
+\centering
+\includegraphics[width=\linewidth]{/mnt/data/c0aebc44-2399-44ae-a981-9d6a8b26264f.png}
+\end{columns}
+\end{frame}
+
+\section{Teoria essenziale}
+\begin{frame}{Integratore ideale e con $R_{\text{reg}}$}
+\textbf{Integratore ideale} (ipotesi $A\to\infty$ e ingresso dell'OpAmp a massa virtuale):
+\begin{equation}
+H(\omega)=\frac{V_{\text{out}}}{V_{\text{in}}} = -\frac{1}{j\omega R C}.
+\end{equation}
+Inserendo la resistenza di feedback $R_{\text{reg}}$ si ottiene un polo a bassa frequenza e un guadagno finito a DC:
+\begin{equation}
+H(\omega)=\frac{R_{\text{reg}}/R}{1 + j\omega R_{\text{reg}} C}, \qquad
+\omega \gg \frac{1}{R_{\text{reg}} C} \Rightarrow \text{comportamento da integratore}.
+\end{equation}
+Nel dominio del tempo: \quad
+$V_{\text{out}}(t) = -\dfrac{1}{RC}\displaystyle\int V_{\text{in}}(t)\,dt$ (trascurando transitori).
+\end{frame}
+
+\begin{frame}{Derivatore con polo dominante dell'amplificatore}
+Derivatore ideale: 
+\begin{equation}
+H(\omega) = - j \omega R C.
+\end{equation}
+Considerando la \textbf{dipendenza in frequenza del guadagno open-loop} dell'OpAmp
+\begin{equation}
+A(\omega) = \frac{A_0}{1 + j\omega\tau_{PD}}, \qquad \text{(polo dominante)}
+\end{equation}
+si ha, per $\abs{A(\omega)}\gg 1$,
+\begin{equation}
+H(\omega) \simeq \frac{A_0\,j\omega\tau_{PD}}{1 + j\omega\tau_{PD}} \cdot \frac{R}{A_0} = \frac{j\omega R C}{1 + j\omega\tau_{PD}} \quad \text{(forma qualitativa)}.
+\end{equation}
+Ne segue una \textbf{divergenza limitata} e un \textbf{massimo} attorno a
+$f_{\text{div}} \propto \dfrac{1}{2\pi\sqrt{\tau_{PD} R C A_0}}$.
+\end{frame}
+
+\section{Integratore: simulazioni e prove}
+\begin{frame}{Montaggio integratore e simulazioni (TINA)}
+\begin{columns}[T,onlytextwidth]
+\column{0.5\textwidth}
+\includegraphics[width=\linewidth]{/mnt/data/5ece17af-bb8c-448c-bed8-77bdf3c26beb.png}
+\column{0.5\textwidth}
+\begin{itemize}
+  \item Simulazioni di spazzata in frequenza e nel tempo.
+  \item Verifica con onda \textbf{quadra} $\rightarrow$ uscita \textbf{triangolare}.
+  \item Valutazione del limite a bassa $f$ fissato da $R_{\text{reg}}$.
+\end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Integratore: esempi dal logbook (tempo)}
+\centering
+\includegraphics[page=8,width=.9\linewidth]{/mnt/data/MALDIN_logbook_es05.pdf}\\[2mm]
+\small Esempi ingresso/uscita a diverse frequenze (uscita triangolare per ingresso quadra).
+\end{frame}
+
+\begin{frame}{Integratore: risposta in frequenza}
+\centering
+\includegraphics[page=20,width=.9\linewidth]{/mnt/data/MALDIN_logbook_es05.pdf}\\[2mm]
+\small Spazzata in frequenza: regione di comportamento da integratore tra $\frac{1}{2\pi R_{\text{reg}}C}$ e la banda utile dell'OpAmp.
+\end{frame}
+
+\begin{frame}{Offset $V_{\text{off}}$ e saturazione (integratore)}
+Nel limite di alta amplificazione, l'offset d'ingresso si ripresenta all'ingresso invertente:
+\begin{equation}
+V_{+}=V_{-}=V_{\text{off}}.
+\end{equation}
+La componente continua in uscita cresce come
+\begin{equation}
+V_{\text{out,DC}} \simeq V_{\text{off}}\,\frac{R+R_{\text{reg}}}{R},
+\end{equation}
+portando a \textbf{saturazione} se non si limita l'intervallo di $f$ o l'ampiezza del segnale.
+\end{frame}
+
+\section{Derivatore: simulazioni e prove}
+\begin{frame}{Montaggio derivatore e stabilizzazione}
+\begin{columns}[T,onlytextwidth]
+\column{0.5\textwidth}
+\includegraphics[width=\linewidth]{/mnt/data/2d0494ac-467e-4326-ab4a-cf51b54fcbb0.png}
+\column{0.5\textwidth}
+\begin{itemize}
+  \item $R_{\text{reg}}$ in serie/parallelo per limitare guadagno in alta $f$.
+  \item Evita auto-oscillazioni e risonanza marcata.
+\end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Derivatore: esempi dal logbook (tempo)}
+\centering
+\includegraphics[page=15,width=.9\linewidth]{/mnt/data/MALDIN_logbook_es05.pdf}\\[2mm]
+\small Uscita proporzionale alla derivata dell'ingresso: picchi in corrispondenza dei fronti.
+\end{frame}
+
+\begin{frame}{Derivatore: risonanza e mitigazione}
+\centering
+\includegraphics[page=17,width=.9\linewidth]{/mnt/data/MALDIN_logbook_es05.pdf}\\[2mm]
+\small Campionamento della risonanza senza $R_{\text{reg}}$; l'inserimento di $R_{\text{reg}}$ smorza e allarga la banda utile.
+\end{frame}
+
+\section{Confronti in frequenza}
+\begin{frame}{Bode: integrazione vs derivazione}
+\begin{columns}[T,onlytextwidth]
+\column{0.5\textwidth}
+\centering
+\includegraphics[page=20,width=\linewidth]{/mnt/data/MALDIN_logbook_es05.pdf}
+\small Integratore: pendenza $\approx -20$ dB/dec oltre $\frac{1}{R_{\text{reg}}C}$.
+\column{0.5\textwidth}
+\centering
+\includegraphics[page=21,width=\linewidth]{/mnt/data/MALDIN_logbook_es05.pdf}
+\small Derivatore: pendenza $\approx +20$ dB/dec fino al limite imposto da $A(\omega)$ e $\tau_{PD}$.
+\end{columns}
+\end{frame}
+
+\section{Takeaways e prospettive}
+\begin{frame}{Cosa abbiamo imparato}
+\begin{itemize}
+  \item \textbf{Integratore}: funziona per $\omega \gg 1/(R_{\text{reg}}C)$, ma è sensibile all'offset $\Rightarrow$ rischio saturazione.
+  \item \textbf{Derivatore}: amplifica il rumore alle alte frequenze; $R_{\text{reg}}$ è \textbf{necessaria} per stabilità.
+  \item Il polo dominante dell'OpAmp limita entrambi i circuiti: attenzione a \textbf{GBWP} e a $\tau_{PD}$.
+  \item Le misure confermano le tendenze teoriche con \textbf{deviazioni spiegabili} da guadagno finito e componenti reali.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Appendice: note pratiche}
+\begin{itemize}
+  \item Evitare saturazione regolando ampiezza del generatore e scegliendo $R_{\text{reg}}$ adeguata.
+  \item Per misure di Bode pulite: bufferare l'ingresso e curare la messa a terra.
+  \item Consiglio: salvare tracce e parametri di setup per tracciabilità.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\centering
+\Large Domande?
+\end{frame}
+
+\end{document}
+"""
+
+tex_path.write_text(content, encoding="utf-8")
+
+# Also create a simple README to guide compilation
+readme = base / "README_S05.txt"
+readme.write_text("""
+Compilazione:
+1) Usare pdflatex o lualatex su S05_derivatore_integratore_beamer.tex
+2) Il file include direttamente alcune pagine del PDF del logbook e 4 immagini PNG fornite.
+   - Se lavori in un'altra cartella, mantieni il PDF 'MALDIN_logbook_es05.pdf' nella stessa directory
+     oppure aggiorna i percorsi nelle \\includegraphics.
+""", encoding="utf-8")
+
+[str(tex_path), str(readme)]
